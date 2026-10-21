@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#331b3f">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 </head>
 <body>
 <title>Schemapp</title>
@@ -79,6 +82,17 @@ button { font: inherit; color: inherit; }
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 .mono { font-variant-numeric: tabular-nums; }
+.sk-card { background: var(--surface); border-radius: var(--radius); padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; }
+.sk-today { background: var(--sage); opacity: 0.55; padding: 22px 18px; gap: 14px; }
+.sk { display: block; height: 12px; border-radius: 6px; background: var(--line); animation: sk-pulse 1.4s ease-in-out infinite; }
+.sk-today .sk { background: rgba(51, 27, 63, 0.14); }
+.sk.h { height: 18px; }
+.sk.big { height: 52px; border-radius: 10px; }
+.sk.dot { width: 20px; height: 20px; border-radius: 6px; }
+.sk.w40 { width: 40%; } .sk.w45 { width: 45%; } .sk.w50 { width: 50%; } .sk.w55 { width: 55%; } .sk.w60 { width: 60%; } .sk.w70 { width: 70%; } .sk.w80 { width: 80%; } .sk.w90 { width: 90%; }
+.sk-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+@keyframes sk-pulse { 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
 
 main { padding-top: calc(env(safe-area-inset-top, 0px) + 20px); padding-bottom: calc(var(--nav-h) + 24px); overflow-x: clip; }
 main .wrap { display: flex; flex-direction: column; gap: var(--space-section); padding-block: 4px 8px; }
@@ -100,6 +114,8 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .today .big.off { white-space: normal; }
 .today .big-sub .big { display: flex; flex-direction: column; font-size: clamp(3rem, 19vw, 4.75rem); line-height: 0.95; letter-spacing: -0.04em; }
 .today .big-sub .big .sep { display: none; }
+/* The big times fade from plum to a lighter purple. */
+.today .big-sub { background: linear-gradient(135deg, #331b3f 20%, #583870 100%); -webkit-background-clip: text; width: fit-content; background-clip: text; -webkit-text-fill-color: transparent; }
 .today .big-sub:has(.big + .big) .big { flex-direction: row; gap: 0.25em; font-size: clamp(2rem, 10vw, 3rem); }
 .today .big-sub:has(.big + .big) .big .sep { display: inline; }
 .today .pill { font-size: var(--fs-md); font-weight: 700; }
@@ -128,7 +144,8 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .stepper { display: flex; gap: 6px; flex: none; }
 .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 0; background: var(--accent-soft); display: grid; place-items: center; cursor: pointer; }
 .icon-btn svg { width: 16px; height: 16px; stroke: var(--ink); }
-.text-btn.keep-space { visibility: hidden; }
+.text-btn.keep-space, .icon-btn.keep-space { visibility: hidden; }
+.icon-btn[data-act$="0"] svg { width: 19px; height: 19px; stroke: var(--ink); color: var(--ink); }
 .text-btn { height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); padding: 0 12px; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
 
 /* Week list */
@@ -152,6 +169,14 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .extra-line { font-size: var(--fs-sm); color: var(--accent); font-weight: 500; }
 .d-hrs { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
 .week-sum { display: flex; justify-content: space-between; gap: 12px; padding: 0 4px; color: var(--muted); font-size: var(--fs-sm); }
+.swipe-hint { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin: -8px 0 -10px; }
+.oc-card .swipe-hint { margin-top: 0; }
+.swipe-hint button { width: 32px; height: 24px; display: grid; place-items: center; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink); opacity: 0.25; }
+.swipe-hint button:active { opacity: 0.9; }
+.swipe-hint svg { width: 14px; height: 14px; stroke: currentColor; }
+.swipe-hint .dots { display: flex; gap: 18px; }
+.swipe-hint .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); opacity: 0.13; transition: opacity 0.2s; }
+.swipe-hint .dots span.on { opacity: 0.45; }
 .week-sum strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -168,6 +193,15 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .favs td.off { color: var(--muted); }
 .favs td.note { color: var(--warn); font-size: var(--fs-xs); }
 .fav-sec { display: flex; flex-direction: column; gap: var(--space-inner); }
+.fav-day { list-style: none; margin: 0; padding: 0; }
+.fav-day li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.fav-day li:first-child { border-top: 0; }
+.fav-day li:active { background: var(--accent-soft); }
+.fav-day .fd-n { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fav-day .fd-you { color: var(--muted); font-weight: 400; }
+.fav-day .fd-t { font-variant-numeric: tabular-nums; text-align: right; }
+.fav-day .fd-t.off { color: var(--muted); }
+.fav-day .fd-t.note { color: var(--warn); }
 .favs tr.me th { color: var(--muted); }
 .favs .cur { background: var(--accent-soft); }
 .favs thead th.cur { color: var(--ink); }
@@ -184,6 +218,7 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 /* Settings */
 .panel { border-top: 1px solid var(--line); padding: 16px 0 4px; display: flex; flex-direction: column; gap: 10px; }
 .panel h3 { margin: 0; font-size: var(--fs-md); font-weight: 600; }
+.pend-h { margin: 10px 0 0; font-size: var(--fs-md); font-weight: 600; }
 .panel p { margin: 0; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: var(--fs-sm); }
 .kv dt { color: var(--muted); }
@@ -247,6 +282,18 @@ button.chip { font: inherit; font-size: var(--fs-sm); color: var(--ink); cursor:
 .oc-list { list-style: none; margin: 0; padding: 0; }
 .oc-list li { display: grid; grid-template-columns: 4.6rem 3.4rem 1fr; align-items: baseline; gap: 8px; padding: 8px 4px; border-top: 1px solid var(--line); }
 .oc-list li:last-child { border-bottom: 1px solid var(--line); }
+/* On Mitt schema: a white card, rows divided by a thin line only between them. */
+.oc-card { background: var(--surface); border-radius: var(--radius); padding: 16px 16px 6px; gap: 6px; box-shadow: 0 1px 2px rgba(51, 27, 63, 0.06); }
+.oc-card .oc-list li, .oc-card .oc-list li:last-child { padding: 6px 0; border: 0; }
+.oc-card .oc-t { font-size: var(--fs-lg); }
+/* Den här veckan and Avdelningskollegor on Mitt schema: white cards like Idag på jobbet. */
+.home-card { background: var(--surface); border-radius: var(--radius); padding: 16px; box-shadow: 0 1px 2px rgba(51, 27, 63, 0.06); overflow: hidden; }
+.home-card .week { border-bottom: 0; }
+/* Den här veckan is green in both themes; the variables restyle everything inside. */
+.home-card.green { --surface: var(--sage); --ink: #331b3f; --muted: rgba(51, 27, 63, 0.68); --line: rgba(51, 27, 63, 0.14); --accent: #2e5a3c; --accent-soft: rgba(255, 255, 255, 0.4); --warn: #7a4a00; background: var(--sage); color: var(--ink); }
+.home-card.green .week li.is-today, .home-card.green .week li.is-today:hover, .home-card.green .week li.is-today[data-act]:active { background: rgba(255, 255, 255, 0.5); }
+.home-card .week li, .home-card .fav-day li { border-top: 0; }
+.oc-card { overflow: hidden; position: relative; padding: 16px; }
 .oc-list li.mine .oc-n { color: var(--hl-ink); font-weight: 600; }
 .oc-k { font-size: var(--fs-sm); color: var(--muted); }
 .oc-t { font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -268,7 +315,11 @@ a.btn { text-decoration: none; color: var(--ink); }
 .btn:disabled { opacity: 0.5; cursor: default; }
 
 /* Progress through today's shift */
-.prog { height: 6px; border-radius: 3px; background: rgba(51, 27, 63, 0.16); overflow: hidden; margin-top: 6px; }
+.prog-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.prog { flex: 1; height: 6px; border-radius: 3px; background: rgba(51, 27, 63, 0.16); overflow: hidden; }
+.prog-pct { font-size: var(--fs-sm); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--sage-ink); white-space: nowrap; }
+.glance .prog-pct { font-size: 6vmin; }
+.glance .prog { height: 1.8vmin; border-radius: 1vmin; }
 .prog span { display: block; height: 100%; background: var(--sage-ink); border-radius: 3px; }
 
 /* Profile picker: searchable list */
@@ -301,7 +352,7 @@ a.btn { text-decoration: none; color: var(--ink); }
 .settings.sub .seg-ctl { gap: 8px; }
 .settings.sub .seg-ctl button { height: 52px; min-width: 60px; font-size: var(--fs-md); }
 .settings.sub .role-list li { padding: 10px 0; }
-.settings.sub .plan-sel { min-height: 48px; font-size: 1rem; padding: 0 12px; }
+.settings.sub .plan-btn { min-height: 48px; font-size: 1rem; }
 .settings.sub .rl-n { font-size: var(--fs-md); }
 .settings.sub .help ol { font-size: var(--fs-md); gap: 10px; }
 /* Settings: the everyday choices first */
@@ -310,6 +361,17 @@ a.btn { text-decoration: none; color: var(--ink); }
 
 /* Schema tab: everyone in a list, a sheet per person */
 .day-sec { display: flex; flex-direction: column; gap: var(--space-inner); }
+.pen-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; margin: -6px 0 -6px 4px; vertical-align: middle; background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.pen-btn svg { width: 17px; height: 17px; stroke: var(--muted); }
+.pen-btn:active { background: var(--accent-soft); }
+.pgroup { display: flex; flex-direction: column; gap: var(--space-inner); margin-top: 18px; }
+.pgroup .plist { margin: 0; }
+.mode-switch { display: flex; align-items: center; padding: 3px; gap: 2px; border-radius: 12px; border: 0; background: var(--accent-soft); cursor: pointer; flex: none; font: inherit; }
+.mode-switch .opt { display: grid; place-items: center; height: 34px; min-width: 40px; padding: 0 12px; border-radius: 9px; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); white-space: nowrap; }
+.mode-switch .opt.on { background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 2px rgba(23, 13, 28, 0.2); }
+.mode-switch svg { width: 18px; height: 18px; stroke: var(--muted); }
+.prow .pt.now { color: var(--ink); font-weight: 600; }
+.prow .pt.past { opacity: 0.7; }
 .sec-head h2 .cnt { font-weight: 500; color: var(--muted); font-size: var(--fs-md); margin-left: 4px; }
 .day-off { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
 .people-sec { display: flex; flex-direction: column; gap: var(--space-inner); }
@@ -327,7 +389,25 @@ a.btn { text-decoration: none; color: var(--ink); }
 .rl-n { font-weight: 500; }
 .rl-n small { color: var(--muted); font-weight: 400; margin-left: 8px; font-variant-numeric: tabular-nums; }
 .role-list .seg-ctl button { height: 36px; font-size: var(--fs-sm); }
-.plan-sel { font: inherit; font-size: var(--fs-sm); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-height: 40px; padding: 0 10px; }
+.plan-btn { font: inherit; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-height: 40px; padding: 0 10px 0 12px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.plan-btn svg { width: 14px; height: 14px; stroke: var(--muted); transition: transform 0.15s; }
+.plan-btn:disabled { opacity: 0.5; cursor: default; }
+.plan-pop { position: fixed; z-index: 21; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100% - 32px)); background: var(--surface); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(23, 13, 28, 0.3); }
+.dept-edit .sec-head h3 { margin: 0; }
+.dept-members { list-style: none; margin: 4px 0 0; padding: 0; }
+.dept-members li + li { border-top: 1px solid var(--line); }
+.dept-members button { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 48px; padding: 0 2px; background: none; border: 0; font: inherit; font-size: var(--fs-md); color: var(--ink); text-align: left; cursor: pointer; }
+.dept-members button svg { width: 14px; height: 14px; stroke: var(--muted); }
+.dept-pick { display: flex; flex-direction: column; gap: 8px; }
+.dept-pick button { display: flex; align-items: center; min-height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.dept-pick button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.dept-form { display: flex; flex-direction: column; gap: 10px; }
+.dept-form input { font: inherit; font-size: 1rem; min-height: 48px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.plan-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.plan-pick .auto { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; }
+.plan-pick .auto small { font-weight: 400; font-size: var(--fs-xs); opacity: 0.8; }
+.plan-pick button { height: 48px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; }
+.plan-pick button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .p-today .row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .sheet .week-sec { margin-top: 12px; }
 
@@ -422,8 +502,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   .prog span { transition: width 0.6s ease; }
 }
 </style>
-<div id="app"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<div id="app"><main class="skel" aria-busy="true" aria-label="Laddar schemat"><div class="wrap"><div class="view"><div class="sk-card sk-today"><i class="sk w40"></i><i class="sk big w60"></i><i class="sk big w55"></i><i class="sk w90"></i></div><div class="sk-card"><i class="sk h w45"></i><i class="sk w80"></i><i class="sk w70"></i></div><div class="sk-card"><i class="sk h w40"></i><i class="sk w50"></i><i class="sk w90"></i><i class="sk w90"></i><i class="sk w90"></i><i class="sk w90"></i><i class="sk w90"></i></div></div></div></main><nav class="tabs" aria-hidden="true"><div class="wrap"><span class="sk-tab"><i class="sk dot"></i><i class="sk w60"></i></span><span class="sk-tab"><i class="sk dot"></i><i class="sk w60"></i></span><span class="sk-tab"><i class="sk dot"></i><i class="sk w60"></i></span><span class="sk-tab"><i class="sk dot"></i><i class="sk w60"></i></span></div></nav></div>
 <script type="application/json" id="schedule-data">{"example": false, "source": "", "updated": "", "weeks": 4, "anchor": "2026-01-05", "breakMin": 30, "people": []}</script>
 <script id="app-script">
 (function () {
@@ -443,8 +522,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + reset + "</style></head><body>" +
       PAGE_TOP +
       '<style id="app-style">' + css + "</style>\n" +
-      '<div id="app"></div>\n' +
-      '<script src="' + XLSX_SRC + '"><\/script>\n' +
+      '<div id="app">' + SKELETON + "</div>\n" +
       '<script type="application/json" id="schedule-data">' + json + "<\/script>\n" +
       '<script id="app-script">' + js + "<\/script>\n" +
       "</body></html>";
@@ -489,6 +567,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function readFavs() { try { var a = JSON.parse(lsGet("skift.favs") || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   var state = {
     view: lsGet("skift.view") || "home",
+    dayMode: lsGet("skift.daymode") === "dept" ? "dept" : "all",
+    peopleMode: lsGet("skift.peoplemode") === "dept" ? "dept" : "all",
     profile: lsGet("skift.profile"),
     picking: false,
     weekOffset: 0,
@@ -501,8 +581,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     favs: readFavs(),
     sub: null,
     pickQ: "",
+    ocOffset: null,
+    favOffset: null,
     peopleQ: "",
     planErr: null,
+    planOpen: null,
+    deptPop: null,
+    deptErr: null,
     person: null
   };
   var flash = ssTake("skift.flash");
@@ -530,6 +615,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     return Math.ceil(((t - y0) / 864e5 + 1) / 7);
   }
   function shortDate(d) { return d.getDate() + "\u00a0" + MONTHS[d.getMonth()]; }
+  function rotOf(data, d) {
+    var w = Math.floor((dayNum(d) - dayNum(parseYmd(data.anchor))) / 7) % data.weeks;
+    return (w + data.weeks) % data.weeks;
+  }
   function rotWeek(d) {
     var diff = dayNum(d) - dayNum(parseYmd(DATA.anchor));
     var w = Math.floor(diff / 7) % DATA.weeks;
@@ -674,19 +763,23 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (!(window.claude && window.claude.use)) { dbState = "off"; return; }
     window.claude.use("db").then(function (db) {
       if (!db) { dbState = "off"; render(); return; }
-      dbRef = db;
-      db.collection("changes").where("date", ">=", ymd(addDays(today(), -35))).onSnapshot(function (snap) {
-        var m = {};
-        snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.person && x.date) m[x.person + "|" + x.date] = x; });
-        CHANGES = m;
-        if (dbState === "loading") dbState = "ready";
-        render();
-      }, function () { dbState = "off"; render(); });
+      dbRef = db; dbState = "ready";
       // Each person's planning hours per week, outside the schedule.
       db.collection("plan").onSnapshot(function (snap) {
         var m = {};
         snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.person && typeof x.hours === "number") m[x.person] = x.hours; });
         PLAN_OF = m;
+        render();
+      }, function () {});
+      // New names for departments and people moved to another department, shared by everyone.
+      db.collection("depts").onSnapshot(function (snap) {
+        var e = { names: {}, moves: {} };
+        snap.docs.forEach(function (doc) {
+          var x = doc.data(); if (!x) return;
+          if (x.kind === "name" && typeof x.idx === "number" && x.name) e.names[x.idx] = x.name;
+          else if (x.kind === "move" && x.person && typeof x.dept === "number") e.moves[x.person] = x.dept;
+        });
+        DEPT_EDIT = e;
         render();
       }, function () {});
     }, function () { dbState = "off"; render(); });
@@ -721,9 +814,27 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // until then the app guesses: förskollärare have 2 h and barnskötare 1 h at full time, a share of that
   // at part time, and the guess is the one that lands closest to a usual rate (100, 80, 75 % ...), but
   // only when one clearly fits better.
-  var PLAN_STEPS = [0, 0.5, 1, 1.5, 2, 2.5, 3], GUESS_HOURS = [2, 1];
+  var PLAN_STEPS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10], GUESS_HOURS = [2, 1];
   var USUAL_RATES = [50, 60, 70, 75, 80, 90, 100];
   var PLAN_OF = {};
+  // Departments come from the file; names and moves made in the app are kept on top of it.
+  // Without the shared store (outside claude.ai) they are kept on this device.
+  var DEPT_EDIT = readDeptEdit();
+  function readDeptEdit() { try { var e = JSON.parse(lsGet("skift.depts") || "null"); if (e && e.names && e.moves) return e; } catch (x) {} return { names: {}, moves: {} }; }
+  function deptList() {
+    if (!DATA.depts || DATA.depts.length < 2) return null;
+    return DATA.depts.map(function (d, i) { return { name: DEPT_EDIT.names[i] || d.name, color: d.color }; });
+  }
+  function deptOf(p) { var m = DEPT_EDIT.moves[p.name]; return m != null && DATA.depts && DATA.depts[m] ? m : p.dept != null ? p.dept : null; }
+  function writeDept(kind, key, value) {
+    if (kind === "name") DEPT_EDIT.names[key] = value; else DEPT_EDIT.moves[key] = value;
+    buzz(); render();
+    if (!dbRef) { lsSet("skift.depts", JSON.stringify(DEPT_EDIT)); return; }
+    var id = kind === "name" ? "n" + key : "m_" + changeId(key, "").slice(1);
+    dbRef.collection("depts").doc(id).set(kind === "name" ? { kind: "name", idx: key, name: value } : { kind: "move", person: key, dept: value }).then(null, function () {
+      state.deptErr = "Ändringen kunde inte sparas. Försök igen."; render();
+    });
+  }
   function planOf(p) {
     if (PLAN_OF[p.name] != null) return { h: PLAN_OF[p.name], auto: false };
     var avg = weekAverage(p);
@@ -746,11 +857,36 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       render();
     });
   }
+  // Planeringstid is chosen in the app, not with the phone's own picker: tapping the value opens
+  // a small popup with the choices. Picking one saves it and closes the popup.
   function planSelect(p) {
+    var cur = PLAN_OF[p.name], g = planOf(p), ok = dbState === "ready";
+    var val = cur != null ? numText(cur) + "\u00a0h" : g.auto ? hours(g.h * 60) : "Ingen vald";
+    return '<button class="plan-btn" data-act="planopen" data-name="' + esc(p.name) + '" aria-haspopup="dialog" aria-label="Planeringstid för ' + esc(p.name) + ", " + val + '"' + (ok ? "" : " disabled") + ">" + val + ICON.down + "</button>";
+  }
+  function renderDeptPop() {
+    var dp = state.deptPop, dl = deptList(); if (!dl) return "";
+    var head = function (title, sub) { return '<div class="sheet-head"><div style="min-width:0"><h3 id="plan-title">' + esc(title) + '</h3><div class="sub">' + sub + '</div></div><button class="icon-btn" data-act="deptclose" aria-label="Stäng">' + ICON.close + "</button></div>"; };
+    var out = '<div class="sheet-bg" data-act="deptclose"></div><div class="plan-pop" role="dialog" aria-modal="true" aria-labelledby="plan-title">';
+    if (dp.kind === "rename") {
+      out += head("Byt namn", "Avdelningen heter nu " + esc(dl[dp.i].name)) +
+        '<form class="dept-form" data-form="deptname"><input id="dept-name" type="text" maxlength="40" value="' + esc(dl[dp.i].name) + '" aria-label="Nytt namn" autocomplete="off"><button class="btn" type="submit">Spara namn</button></form>';
+    } else {
+      var p = personByName(dp.name); if (!p) return "";
+      var cur = deptOf(p);
+      out += head(p.name, "Välj avdelning") + '<div class="dept-pick">' + dl.map(function (d, i) {
+        return '<button data-act="deptset" data-i="' + i + '" aria-pressed="' + (cur === i) + '">' + esc(d.name) + "</button>";
+      }).join("") + "</div>";
+    }
+    return out + "</div>";
+  }
+  function renderPlanPop() {
+    var p = personByName(state.planOpen); if (!p) return "";
     var cur = PLAN_OF[p.name], g = planOf(p);
-    return '<select class="plan-sel" data-name="' + esc(p.name) + '" aria-label="Planeringstid för ' + esc(p.name) + '"' + (dbState === "ready" ? "" : " disabled") + ">" +
-      '<option value=""' + (cur == null ? " selected" : "") + ">" + (g.auto ? "Antaget, " + hours(g.h * 60) : "Ingen vald") + "</option>" +
-      PLAN_STEPS.map(function (h) { return '<option value="' + h + '"' + (cur === h ? " selected" : "") + ">" + numText(h) + "\u00a0h</option>"; }).join("") + "</select>";
+    return '<div class="sheet-bg" data-act="planclose"></div><div class="plan-pop" role="dialog" aria-modal="true" aria-labelledby="plan-title">' +
+      '<div class="sheet-head"><div style="min-width:0"><h3 id="plan-title">' + esc(p.name) + '</h3><div class="sub">Planeringstid per vecka</div></div><button class="icon-btn" data-act="planclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
+      '<div class="plan-pick"><button class="auto" data-act="setplan" data-name="' + esc(p.name) + '" data-h="" aria-pressed="' + (cur == null) + '" aria-label="Automatisk' + (g.auto ? ", " + hours(g.h * 60) : "") + '">Auto' + (g.auto ? "<small>" + hours(g.h * 60) + "</small>" : "") + "</button>" +
+      PLAN_STEPS.map(function (h) { return '<button data-act="setplan" data-name="' + esc(p.name) + '" data-h="' + h + '" aria-pressed="' + (cur === h) + '">' + numText(h) + "\u00a0h</button>"; }).join("") + "</div></div>";
   }
 
   // ---------- Employment rate ----------
@@ -812,6 +948,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
 
   // ---------- Rendering ----------
   var app = document.getElementById("app");
+  // Grey placeholders shaped like Mitt schema, shown until the app has drawn itself.
+  var SKELETON = app.innerHTML;
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function initials(n) {
     var p = String(n).replace(/[^A-Za-zÀ-ɏ\s]/g, " ").trim().split(/\s+/).filter(Boolean);
@@ -819,10 +957,15 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   var ICON = {
+    today: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.5H8"/></svg>',
+    down: '<svg viewBox="0 0 16 16" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 5 5 5-5"/></svg>',
     left: '<svg viewBox="0 0 16 16" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>',
     right: '<svg viewBox="0 0 16 16" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg>',
     mark: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#ACC7B4"/><rect x="7" y="9" width="18" height="16" rx="3.5" fill="none" stroke="#331B3F" stroke-width="2.2"/><path d="M12 6.5v4.5M20 6.5v4.5" fill="none" stroke="#331B3F" stroke-width="2.2" stroke-linecap="round"/><rect x="10.5" y="13.8" width="4.6" height="3.6" rx="1" fill="#331B3F"/><rect x="16.9" y="13.8" width="4.6" height="3.6" rx="1" fill="#331B3F"/><rect x="10.5" y="19" width="4.6" height="3.4" rx="1" fill="#331B3F"/><rect x="16.9" y="19" width="4.6" height="3.4" rx="1" fill="#E3A33B" stroke="#331B3F" stroke-width="1"/></svg>',
     home: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+    pen: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5l4 4M4 20l1-4.5L15.8 4.7a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.5 19 4 20z"/></svg>',
+    list: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg>',
+    groups: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="4" width="16" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="16" height="6.5" rx="1.8"/></svg>',
     grid: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9.3h17M3.5 14.6h17M9.2 4v16M14.8 4v16"/></svg>',
     close: '<svg viewBox="0 0 16 16" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
     team: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="16.5" cy="8" r="2.6"/><path d="M15.5 13.3c2.6-.3 4.5 1.1 5 3.9"/></svg>',
@@ -833,7 +976,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     moon: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linejoin="round"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/></svg>'
   };
 
-  var lastViewKey = null, slideDir = 0, slideFar = false, lastSheetKind = "";
+  var lastViewKey = null, slideDir = 0, slideFar = false, slideSel = "[data-slide]", lastSheetKind = "";
   function render() {
     var me = state.profile && personByName(state.profile);
     var needPick = !me || state.picking;
@@ -854,6 +997,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }
     if (state.edit) { html += renderEditor(me); state.edit.fresh = false; }
     else if (state.person) { html += renderPersonSheet(me); state.person.fresh = false; }
+    if (state.planOpen && state.view === "settings") html += renderPlanPop();
+    if (state.deptPop && (state.view === "settings" || state.view === "day" || state.view === "grid")) html += renderDeptPop();
     var focusId = document.activeElement && document.activeElement.id;
     var oldDeck = document.getElementById("deck"), deckTop = oldDeck ? oldDeck.scrollTop : 0;
     var oldSheet = app.querySelector(".sheet"), sheetTop = oldSheet ? oldSheet.scrollTop : 0, sheetKind = state.edit ? "edit" : state.person ? "person" : "";
@@ -872,8 +1017,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (state.pickQ) filterPicker(state.pickQ);
       if (focusId === "pick-q") { var q = document.getElementById("pick-q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
     }
-    if (slideDir) { var sc = slideDir > 0 ? "from-r" : "from-l"; app.querySelectorAll("[data-slide]").forEach(function (el) { el.classList.add(sc); if (slideFar) el.classList.add("far"); }); slideDir = 0; }
-    slideFar = false;
+    if (slideDir) { var sc = slideDir > 0 ? "from-r" : "from-l"; app.querySelectorAll(slideSel).forEach(function (el) { el.classList.add(sc); if (slideFar) el.classList.add("far"); }); slideDir = 0; }
+    slideFar = false; slideSel = "[data-slide]";
+    steadyOc();
+    if (document.getElementById("file-input")) loadXlsx(function () {});
     // Animate only when switching view, not on every redraw.
     var key = (needPick ? "pick" : state.view);
     if (key !== lastViewKey) { var v = app.querySelector(".view"); if (v) v.classList.add("enter"); }
@@ -910,6 +1057,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     q = norm(q).trim();
     var any = false;
     app.querySelectorAll(listSel + " li").forEach(function (li) { var hit = !q || li.getAttribute("data-q").indexOf(q) >= 0; li.hidden = !hit; if (hit) any = true; });
+    app.querySelectorAll(listSel + " .pgroup").forEach(function (g) { g.hidden = !g.querySelector("li:not([hidden])"); });
     var none = document.getElementById(noneId); if (none) none.hidden = any;
   }
 
@@ -945,12 +1093,49 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     return info ? '<span class="dayinfo ' + info.type + '">' + esc(info.name) + "</span>" : "";
   }
 
+  // Who opens and closes, for one day at a time. Swipe the card (or use the arrows) to see other days;
+  // days when nobody works are skipped. Starts on the first working day from today.
+  function ocDayFrom(off, dir) {
+    var t = today();
+    for (var i = 0; i < 21; i++, off += dir) if (openClose(addDays(t, off))) return off;
+    return null;
+  }
+  function stepFav(n) {
+    var next = ocDayFrom(state.favOffset + n, n);
+    if (next == null) return;
+    state.favOffset = next; slideSel = "[data-favslide]"; slideDir = n; render(); buzz();
+  }
+  function stepOc(n) {
+    var next = ocDayFrom(state.ocOffset + n, n);
+    if (next == null) return;
+    state.ocOffset = next; slideSel = "[data-ocslide]"; slideDir = n; render(); buzz();
+  }
+  // Names wrap to two lines on some days. Give the list the height of the tallest day in the
+  // rotation, so the card keeps its size when swiping and nothing below it moves.
+  var ocMe = null;
+  function steadyOc() {
+    var body = app.querySelector(".oc-card .oc-body");
+    if (!body) return;
+    var probe = document.createElement("div"), t = today(), html = "";
+    probe.style.cssText = "position:absolute;visibility:hidden;left:0;top:0;width:" + body.clientWidth + "px";
+    for (var i = -7; i < DATA.weeks * 7 + 7; i++) { var oc = openClose(addDays(t, i)); if (oc) html += "<div>" + ocGrid(oc, ocMe) + "</div>"; }
+    probe.innerHTML = html;
+    body.parentNode.appendChild(probe);
+    var h = 0;
+    for (var c = probe.firstChild; c; c = c.nextSibling) h = Math.max(h, c.offsetHeight);
+    probe.remove();
+    body.style.minHeight = h + "px";
+  }
   function openCloseHtml(me) {
-    var t = today(), d = t, oc = null;
-    for (var i = 0; i < 14 && !oc; i++) { d = addDays(t, i); oc = openClose(d); }
+    ocMe = me;
+    if (state.ocOffset == null) state.ocOffset = ocDayFrom(0, 1);
+    if (state.ocOffset == null) return "";
+    var t = today(), off = state.ocOffset, d = addDays(t, off), oc = openClose(d);
     if (!oc) return "";
-    var when = dayNum(d) === dayNum(t) ? "Idag på jobbet" : dayNum(d) === dayNum(t) + 1 ? "Imorgon på jobbet" : DAYS[dow(d)] + " " + shortDate(d);
-    return '<section class="oc" aria-label="' + esc(when) + '"><div class="sec-head"><h2>' + esc(when) + "</h2></div>" + ocGrid(oc, me) + "</section>";
+    var when = off === 0 ? "Idag på jobbet" : off === 1 ? "Imorgon på jobbet" : off === -1 ? "Igår på jobbet" : DAYS[dow(d)] + " " + shortDate(d);
+    return '<section class="oc oc-card" aria-label="Vem öppnar och stänger"><div class="sec-head"><h2 data-ocslide>' + esc(when) + '</h2><div class="stepper">' + todayBtn("oc0", off !== ocDayFrom(0, 1)) + "</div></div>" +
+      '<div class="oc-body" data-ocslide>' + ocGrid(oc, me) + "</div>" +
+      swipeHint("ocday", dow(d) > 4 ? 7 : 5, dow(d), "dag") + "</section>";
   }
   function ocGrid(oc, me) {
     return '<ul class="oc-list"><li class="' + (me && oc.open.names.indexOf(me.name) >= 0 ? "mine" : "") + '"><span class="oc-k">Öppnar</span><span class="oc-t">' + hhmm(oc.open.min) + '</span><span class="oc-n">' + esc(namesText(oc.open.names, me)) + "</span></li>" +
@@ -966,7 +1151,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var live = st && st.cls === "live", now = nowMinutes();
     if (live) {
       var pc = Math.round(Math.max(0, Math.min(1, (now - st.s) / (st.e - st.s))) * 100);
-      out += '<div class="prog" role="progressbar" aria-label="Del av passet som har gått" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pc + '"><span style="width:' + pc + '%"></span></div>';
+      out += '<div class="prog-row"><div class="prog" role="progressbar" aria-label="Del av passet som har gått" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pc + '"><span style="width:' + pc + '%"></span></div><span class="prog-pct" aria-hidden="true">' + pc + "\u00a0%</span></div>";
     }
     // One line for what is happening now, one quiet line for the facts.
     if (st || sh.changed) {
@@ -992,7 +1177,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
 
   // The "Idag" button keeps its space when hidden, so the arrows never move.
   function todayBtn(act, show) {
-    return '<button class="text-btn' + (show ? "" : " keep-space") + '" data-act="' + act + '"' + (show ? "" : ' tabindex="-1" aria-hidden="true"') + ">Idag</button>";
+    return '<button class="icon-btn' + (show ? "" : " keep-space") + '" data-act="' + act + '" aria-label="Gå till idag"' + (show ? "" : ' tabindex="-1" aria-hidden="true"') + ">" + ICON.today + "</button>";
   }
 
   // "19–25 okt", or "26 okt–1 nov" when the week spans two months.
@@ -1011,26 +1196,25 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   // Week table for you and your favourites; follows the week shown above it.
-  function favsHtml(me, mon) {
+  // Avdelningskollegor shows one day at a time, the same days as the open/close card.
+  function favsHtml(me) {
     var fp = favPeople(me);
     if (!fp.length) return '<section class="fav-sec" aria-label="Avdelningskollegor"><div class="sec-head"><h2>Avdelningskollegor</h2></div><p class="hint">Välj kollegor du vill se här.</p><div class="btn-row"><button class="text-btn" data-act="gofavs">Välj avdelningskollegor</button></div></section>';
-    var people = (me ? [me] : []).concat(fp), t = today(), days = [];
-    for (var i = 0; i < 7; i++) {
-      var d = addDays(mon, i);
-      if (i < 5 || people.some(function (p) { return shiftOn(p, d).kind !== "off"; })) days.push(d);
-    }
-    var head = "<tr><th></th>" + days.map(function (d) { return '<th class="' + (dayNum(d) === dayNum(t) ? "cur" : "") + '"><b>' + DAYS_SHORT[dow(d)] + "</b>" + d.getDate() + "</th>"; }).join("") + "</tr>";
-    var body = people.map(function (p) {
-      var isMe = me && p.name === me.name;
-      return '<tr class="' + (isMe ? "me" : "") + '"><th>' + (isMe ? "Du" : esc(p.name)) + "</th>" + days.map(function (d) {
-        var s = shiftOn(p, d), cls = dayNum(d) === dayNum(t) ? ["cur"] : [], txt;
-        if (s.kind === "work") txt = "<span>" + hhmm(s.ranges[0].s) + "</span><span>" + hhmm(s.ranges[s.ranges.length - 1].e) + "</span>";
-        else if (s.kind === "note") { cls.push("note"); txt = esc(s.label.length > 6 ? s.label.slice(0, 5) + "." : s.label); }
-        else { cls.push("off"); txt = "–"; }
-        return '<td class="' + cls.join(" ") + '" data-act="edit" data-name="' + esc(p.name) + '" data-date="' + ymd(d) + '" title="' + esc(p.name + ", " + DAYS[dow(d)] + " " + shortDate(d) + ": " + baseText(s)) + '">' + txt + "</td>";
-      }).join("") + "</tr>";
+    var first = ocDayFrom(0, 1);
+    if (state.favOffset == null) state.favOffset = first == null ? 0 : first;
+    var off = state.favOffset, t = today(), d = addDays(t, off);
+    var rel = off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "";
+    var when = rel + (rel ? DAYS[dow(d)].toLowerCase() : DAYS[dow(d)]) + " " + shortDate(d);
+    var rows = (me ? [me] : []).concat(fp).map(function (p) {
+      var isMe = me && p.name === me.name, s = shiftOn(p, d), txt;
+      if (s.kind === "work") txt = '<span class="fd-t">' + rangeText(s) + "</span>";
+      else if (s.kind === "note") txt = '<span class="fd-t note">' + esc(s.label) + "</span>";
+      else txt = '<span class="fd-t off">Ledig</span>';
+      return '<li class="' + (isMe ? "me" : "") + '" data-act="edit" data-name="' + esc(p.name) + '" data-date="' + ymd(d) + '" tabindex="0" role="button" aria-label="' + esc(p.name + ", " + baseText(s)) + '"><span class="fd-n">' + esc(p.name) + (isMe ? ' <span class="fd-you">du</span>' : "") + "</span>" + txt + "</li>";
     }).join("");
-    return '<section class="fav-sec" aria-label="Avdelningskollegor" data-slide><div class="sec-head"><h2>Avdelningskollegor</h2></div><div class="fav-scroll"><table class="favs"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div></section>";
+    return '<section class="fav-sec" aria-label="Avdelningskollegor"><div class="sec-head"><div><h2>Avdelningskollegor</h2><div class="sub" data-favslide>' + when + "</div></div>" +
+      '<div class="stepper">' + todayBtn("fav0", off !== first) + "</div></div>" +
+      '<ul class="fav-day" data-favslide>' + rows + "</ul>" + swipeHint("favweek", dow(d) > 4 ? 7 : 5, dow(d), "dag") + "</section>";
   }
 
   // Saturday and Sunday are only shown when the uploaded schedule has shifts on them.
@@ -1053,15 +1237,22 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (dx) tcell += '<span class="lbl extra">' + esc(dx) + "</span>";
       if (s.changed) tcell += '<span class="lbl changed">Ändrat · ordinarie ' + esc(baseText(s.base)) + "</span>";
       var cls = [isT ? "is-today" : past ? "is-past" : "", info ? "has-info " + info.type : ""].join(" ").trim();
-      rows += '<li class="' + cls + '"' + (isT ? ' aria-current="date"' : "") + ' data-act="edit" data-name="' + esc(p.name) + '" data-date="' + ymd(d) + '"' + (back ? ' data-back="1"' : "") + ' tabindex="0" role="button" aria-label="' + esc(DAYS[i] + " " + shortDate(d) + ", ändra") + '">' +
+      rows += '<li class="' + cls + '"' + (isT ? ' aria-current="date"' : "") + ' data-act="edit" data-name="' + esc(p.name) + '" data-date="' + ymd(d) + '"' + (back ? ' data-back="1"' : "") + ' tabindex="0" role="button" aria-label="' + esc(DAYS[i] + " " + shortDate(d) + ", visa") + '">' +
         '<div><div class="d-name">' + DAYS_SHORT[i] + '</div><div class="d-date">' + (isT ? "Idag" : shortDate(d)) + "</div>" + (s.closed ? "" : dayLabelHtml(d)) + '</div><div class="d-time">' + tcell + '</div><div class="d-hrs">' + (s.kind === "work" ? hours(workMinutes(s)) : "") + "</div></li>";
     }
     var label = offset === 0 ? "Den här veckan" : offset === 1 ? "Nästa vecka" : offset === -1 ? "Förra veckan" : "Vecka " + isoWeek(mon);
     return '<section class="week-sec" aria-label="Veckan"><div class="sec-head"><div><h2>' + label + '</h2><div class="sub">' + weekRange(mon, weekend ? 7 : 5) + " · v.\u00a0" + isoWeek(mon) + " · schemavecka " + (rotWeek(mon) + 1) + "</div></div>" +
       '<div class="stepper">' + todayBtn(act + "0", offset !== 0) +
-      '<button class="icon-btn" data-act="' + act + '" data-d="-1" aria-label="Föregående vecka">' + ICON.left + '</button><button class="icon-btn" data-act="' + act + '" data-d="1" aria-label="Nästa vecka">' + ICON.right + "</button></div></div>" +
+      (act === "week" ? "" : '<button class="icon-btn" data-act="' + act + '" data-d="-1" aria-label="Föregående vecka">' + ICON.left + '</button><button class="icon-btn" data-act="' + act + '" data-d="1" aria-label="Nästa vecka">' + ICON.right + "</button>") + "</div></div>" +
       '<ul class="week" data-slide>' + rows + "</ul>" +
-      '<div class="week-sum" data-slide><span>' + count + ' pass</span><span>Totalt <strong>' + hours(total) + "</strong></span></div></section>";
+      (act === "week" ? swipeHint(act, DATA.weeks, rotWeek(mon), "vecka") : '<div class="week-sum" data-slide><span>' + count + ' pass</span><span>Totalt <strong>' + hours(total) + "</strong></span></div>") + "</section>";
+  }
+  // Under a swipeable card: light arrows around one dot per step, the current one filled.
+  // Den här veckan has one dot per schemavecka, Avdelningskollegor one per weekday.
+  function swipeHint(act, n, cur, unit) {
+    var dots = "";
+    for (var i = 0; i < n; i++) dots += '<span class="' + (i === cur ? "on" : "") + '"></span>';
+    return '<div class="swipe-hint"><button data-act="' + act + '" data-d="-1" aria-label="Föregående ' + unit + '">' + ICON.left + '</button><span class="dots" aria-hidden="true">' + dots + '</span><button data-act="' + act + '" data-d="1" aria-label="Nästa ' + unit + '">' + ICON.right + "</button></div>";
   }
 
   function renderHome(me, noCard) {
@@ -1070,9 +1261,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (!noCard) out += '<section class="today" aria-label="Idag">' + todayCard(me, false) + "</section>";
     out += openCloseHtml(me);
 
-    var mon = addDays(mondayOf(t), state.weekOffset * 7);
-    out += weekBlock(me, state.weekOffset, "week", false);
-    out += favsHtml(me, mon);
+    out += '<div class="home-card">' + weekBlock(me, state.weekOffset, "week", false) + "</div>";
+    out += '<div class="home-card">' + favsHtml(me) + "</div>";
 
     return out + "</div>";
   }
@@ -1097,7 +1287,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var isMe = me && me.name === p.name;
     var anim = e.fresh ? " in" : "";
     var out = '<div class="sheet-bg' + anim + '" data-act="closeedit"></div><div class="sheet' + anim + '" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="sheet-grab" aria-hidden="true"><span></span></div><div class="wrap sheet-in">' +
-      '<div class="sheet-head"><div style="min-width:0"><h3 id="sheet-title">' + (isMe ? "Ditt pass" : esc(p.name)) + '</h3><div class="sub">' + DAYS[dow(d)] + " " + shortDate(d) + " · ordinarie " + esc(baseText(base)) + "</div>" + dayLabelHtml(d) + "</div>" +
+      '<div class="sheet-head"><div style="min-width:0"><h3 id="sheet-title">' + (isMe ? "Ditt pass" : esc(p.name)) + '</h3><div class="sub">' + DAYS[dow(d)] + " " + shortDate(d) + " · " + esc(baseText(eff)) + "</div>" + dayLabelHtml(d) + "</div>" +
       '<button class="icon-btn" data-act="closeedit" aria-label="Stäng">' + ICON.close + "</button></div>";
     if (!isMe && !e.back) out += '<div class="btn-row"><button class="text-btn" data-act="fav" data-name="' + esc(p.name) + '">' + (isFav(p.name) ? "Ta bort från avdelningskollegor" : "Lägg till som avdelningskollega") + "</button></div>";
     if (cur) out += '<div class="msg ok">Ändrat till: ' + esc(baseText(eff)) + "</div>";
@@ -1105,52 +1295,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     out += '<div class="group-label">På jobbet ' + DAYS[dow(d)].toLowerCase() + " " + shortDate(d) + "</div>" +
       (doc ? ocGrid(doc, me) : '<p class="hint">' + (closedDay(d) ? esc(closedDay(d)) + ", ingen arbetar." : "Ingen arbetar den här dagen.") + "</p>");
 
-    if (dbState === "ready") {
-      out += '<div class="group-label">Ändra för dagen</div><div class="seg-ctl wrap-ctl" role="group" aria-label="Typ av ändring">' +
-        CHANGE_TYPES.map(function (t) { return '<button data-act="settype" data-t="' + t[0] + '" aria-pressed="' + (f.type === t[0]) + '">' + t[1] + "</button>"; }).join("") + "</div>";
-      if (f.type === "tid") {
-        out += '<div class="time-row"><label for="ed-start">Börjar<input id="ed-start" type="time" step="300" value="' + esc(f.start) + '"></label><label for="ed-end">Slutar<input id="ed-end" type="time" step="300" value="' + esc(f.end) + '"></label></div>';
-      }
-      if (f.type) out += '<label class="note-l" for="ed-note">' + (f.type === "annat" ? "Vad gäller det?" : "Kommentar (valfritt)") + '<input id="ed-note" type="text" maxlength="60" value="' + esc(f.note) + '" placeholder="' + (f.type === "annat" ? "t.ex. Kurs, Utbildning" : "t.ex. bytt med Eva") + '"></label>';
-      if (f.err) out += '<div class="msg err" role="alert">' + esc(f.err) + "</div>";
-      out += '<div class="btn-row"><button class="btn primary" data-act="saveedit"' + (!f.type || f.busy ? " disabled" : "") + ">" + (f.busy ? "Sparar..." : "Spara ändring") + "</button>" +
-        (cur ? '<button class="btn" data-act="deledit"' + (f.busy ? " disabled" : "") + ">Ta bort ändringen</button>" : "") + "</div>" +
-        "";
-    } else if (dbState === "readonly") {
-      out += '<div class="msg err">Du kan se ändringar men inte spara egna. Be den som delade appen att ge dig behörighet att använda den (Contributor) i stället för att bara visa den.</div>';
-    } else if (dbState === "loading") {
-      out += '<p class="hint">Hämtar ändringar...</p>';
-    } else {
-      out += '<p class="hint">Ändringar kan bara sparas när appen är öppen via claude.ai och du är inloggad.</p>';
-    }
     if (eff.kind === "work") out += '<div class="btn-row"><a class="btn" href="' + esc(gcalUrl(d, eff, extraOn(p, d))) + '" target="_blank" rel="noopener">Lägg till i Google Kalender</a></div>';
     return out + "</div></div>";
-  }
-
-  function saveEdit() {
-    var e = state.edit, f = e.form;
-    if (!f.type) return;
-    if (f.type === "tid") {
-      var ok = /^\d{2}:\d{2}$/.test(f.start) && /^\d{2}:\d{2}$/.test(f.end) && f.start !== f.end;
-      if (!ok) { f.err = "Fyll i när passet börjar och slutar."; render(); return; }
-    }
-    if (f.type === "annat" && !f.note.trim()) { f.err = "Skriv vad ändringen gäller, till exempel Kurs."; render(); return; }
-    var body = { person: e.person, date: e.date, type: f.type, shift: f.type === "tid" ? f.start + "-" + f.end : "", note: f.note.trim().slice(0, 60), at: new Date().toISOString() };
-    writeChange(e.person, e.date, body);
-  }
-  function writeChange(name, date, body) {
-    var f = state.edit.form;
-    f.busy = true; f.err = null; render();
-    var ref = dbRef.collection("changes").doc(changeId(name, date));
-    (body ? ref.set(body) : ref.delete()).then(function () {
-      buzz(); closeSheet();
-    }, function (err) {
-      f.busy = false;
-      if (err && (err.code === "invalid_argument" || err.code === "not_granted")) { dbState = "readonly"; f.err = null; }
-      else if (err && err.code === "quota_exceeded") f.err = "Det finns för många sparade ändringar. Ta bort gamla ändringar och försök igen.";
-      else f.err = "Ändringen kunde inte sparas. Kontrollera anslutningen och försök igen.";
-      render();
-    });
   }
 
   // ---------- Compact view for small square screens (Galaxy Z Flip cover screen) ----------
@@ -1160,10 +1306,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function coverScreen() {
     // The keyboard makes the window shorter while typing; that is not the cover screen.
     var ae = document.activeElement;
-    if (typeof wasCover === "boolean" && ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) return wasCover;
+    if (typeof wasCover === "boolean" && ((ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) || Date.now() < keyboardUntil)) return wasCover;
     var w = window.innerWidth, h = window.innerHeight, sw = screen.width, sh = screen.height;
     return (w <= 520 && h <= 520) || (w <= 640 && squareish(w, h)) || (sw <= 640 && squareish(sw, sh));
   }
+  // The keyboard takes a moment to close after a field is saved or removed; keep the view until it has.
+  var keyboardUntil = 0;
+  document.addEventListener("focusout", function (e) { if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) keyboardUntil = Date.now() + 1500; }, true);
   var wasCover = coverScreen();
   function glanceActive(me) { return !!(coverScreen() && me && !state.picking); }
   // Week card for the cover screen: this week only, just day and time, large.
@@ -1225,36 +1374,83 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           return '<li><button class="prow" data-act="person" data-name="' + esc(x.p.name) + '"><span class="initials">' + initials(x.p.name) + '</span><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : "") + '</span><span class="pt">' + x.txt + "</span></button></li>";
         }).join("") + "</ul>" : '<p class="hint">' + empty + "</p>") + "</section>";
     }
-    var closed = closedDay(t);
+    var closed = closedDay(t), depts = deptList(), byDept = depts && state.dayMode === "dept";
     var out = '<div class="view">' + exampleNote() +
-      '<div class="sec-head"><div><h2>Dagen</h2><div class="sub">' + DAYS[dow(t)] + " " + shortDate(t) + ", klockan " + hhmm(now) + "</div></div></div>";
+      '<div class="sec-head"><div><h2>Dagen</h2><div class="sub">' + DAYS[dow(t)] + " " + shortDate(t) + "</div></div>" +
+      (depts ? modeSwitch("daymode", byDept) : "") + "</div>";
     if (closed) return out + '<p class="hint">' + esc(closed) + ", förskolan är stängd.</p></div>";
     if (!working.length && !later.length && !done.length) return out + '<p class="hint">Ingen jobbar idag.</p></div>';
+    if (byDept) return out + deptGroups(me, depts, [working, later, done, off]) + "</div>";
     out += group("Jobbar nu", working, "Ingen jobbar just nu.") + group("Har inte börjat", later, "Alla har börjat.") + group("Har slutat", done, "Ingen har slutat än.");
     if (off.length) out += '<section class="day-sec"><div class="sec-head"><h2>Lediga och frånvarande <span class="cnt">' + off.length + '</span></h2></div><p class="day-off">' +
       off.map(function (x) { return esc(x.p.name) + (x.s.kind === "note" ? " (" + esc(x.s.label) + ")" : ""); }).join(", ") + "</p></section>";
     return out + "</div>";
   }
 
+  // Dagen per department: everyone in it, those working now first, then later, done and off.
+  // Your own department comes first.
+  function deptGroups(me, depts, lists) {
+    var order = deptOrder(me, depts);
+    function sec(name, color, rows, idx) {
+      if (!rows.length) return "";
+      var n = rows.filter(function (x) { return x.state === 0; }).length;
+      return '<section class="day-sec">' + deptHead(name, color, idx, n + " av " + rows.length + " jobbar nu") +
+        '<ul class="plist">' + rows.map(function (x) {
+          var isMe = me && x.p.name === me.name, txt = x.state < 3 ? x.txt : x.s.kind === "note" ? esc(x.s.label) : "Ledig";
+          return '<li><button class="prow" data-act="person" data-name="' + esc(x.p.name) + '"><span class="initials">' + initials(x.p.name) + '</span><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : "") + '</span><span class="pt' + (x.state === 0 ? " now" : x.state > 1 ? " past" : "") + '">' + txt + "</span></button></li>";
+        }).join("") + "</ul></section>";
+    }
+    function rowsOf(test) {
+      var rows = [];
+      lists.forEach(function (l, st) { l.forEach(function (x) { if (test(x.p)) rows.push({ p: x.p, s: x.s, txt: x.txt, state: st }); }); });
+      return rows;
+    }
+    return order.map(function (i) { return sec(depts[i].name, depts[i].color, rowsOf(function (p) { return deptOf(p) === i; }), i); }).join("") +
+      sec("Utan avdelning", null, rowsOf(function (p) { return deptOf(p) == null; }));
+  }
+
+  // "Visa alla" or "Avdelningsvis": the chosen one is written out, the other is an icon.
+  function modeSwitch(act, byDept) {
+    return '<button class="mode-switch" role="switch" aria-checked="' + !!byDept + '" aria-label="Avdelningsvis" data-act="' + act + '" data-m="' + (byDept ? "all" : "dept") + '">' +
+      '<span class="opt' + (byDept ? "" : " on") + '">' + (byDept ? ICON.list : "Visa alla") + '</span><span class="opt' + (byDept ? " on" : "") + '">' + (byDept ? "Avdelningsvis" : ICON.groups) + "</span></button>";
+  }
+  // Departments in display order, your own first.
+  function deptOrder(me, depts) {
+    var order = depts.map(function (d, i) { return i; }), mine = me ? deptOf(me) : null;
+    return mine != null ? [mine].concat(order.filter(function (i) { return i !== mine; })) : order;
+  }
+  function deptHead(name, color, idx, sub) {
+    return '<div class="sec-head"><div><h2>' + esc(name) +
+      (idx != null ? '<button class="pen-btn" data-act="deptrename" data-i="' + idx + '" aria-label="Byt namn på ' + esc(name) + '">' + ICON.pen + "</button>" : "") + "</h2>" + (sub ? '<div class="sub">' + sub + "</div>" : "") + "</div></div>";
+  }
+
   function renderPeople(me) {
-    var t = today();
+    var t = today(), depts = deptList(), byDept = depts && state.peopleMode === "dept";
     var people = DATA.people.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "sv"); });
-    var rows = people.map(function (p) {
+    function row(p) {
       var s = shiftOn(p, t), isMe = me && me.name === p.name, txt, cls;
       if (s.kind === "work") { txt = rangeText(s); cls = "work"; }
       else if (s.kind === "note") { txt = esc(s.label); cls = "note"; }
       else { txt = s.closed ? esc(s.closed) : "Ledig"; cls = ""; }
       return '<li data-q="' + esc(norm(p.name)) + '"><button class="prow" data-act="person" data-name="' + esc(p.name) + '"><span class="initials">' + initials(p.name) + '</span><span class="pn">' + esc(p.name) + (isMe ? "<small>du</small>" : "") + '<span class="pp">' + employment(p).pct + '\u00a0%</span></span><span class="pt ' + cls + '">' + txt + "</span></button></li>";
-    }).join("");
+    }
+    var list;
+    if (byDept) {
+      var groups = deptOrder(me, depts).map(function (i) { return { name: depts[i].name, color: depts[i].color, idx: i, ps: people.filter(function (p) { return deptOf(p) === i; }) }; });
+      groups.push({ name: "Utan avdelning", ps: people.filter(function (p) { return deptOf(p) == null; }) });
+      list = '<div id="people-list">' + groups.filter(function (g) { return g.ps.length; }).map(function (g) {
+        return '<section class="pgroup">' + deptHead(g.name, g.color, g.idx, g.ps.length + (g.ps.length === 1 ? " person" : " personer")) + '<ul class="plist">' + g.ps.map(row).join("") + "</ul></section>";
+      }).join("") + "</div>";
+    } else list = '<ul class="plist" id="people-list">' + people.map(row).join("") + "</ul>";
     return '<div class="view">' + exampleNote() +
-      '<div class="sec-head"><div><h2>Kollegor</h2><div class="sub">Tider för idag, ' + DAYS[dow(t)].toLowerCase() + " " + shortDate(t) + "</div></div></div>" +
+      '<div class="sec-head"><div><h2>Kollegor</h2><div class="sub">Tider för idag, ' + DAYS[dow(t)].toLowerCase() + " " + shortDate(t) + "</div></div>" + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div>" +
       '<section class="people-sec"><input id="people-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.peopleQ) + '" autocomplete="off" aria-label="Sök namn">' +
-      '<ul class="plist" id="people-list">' + rows + '</ul><p class="hint" id="people-none" hidden>Inget namn matchar.</p></section></div>';
+      list + '<p class="hint" id="people-none" hidden>Inget namn matchar.</p></section></div>';
   }
 
   function empText(p) {
-    var e = employment(p), auto = planOf(p).auto;
-    return "Arbetar " + e.pct + "\u00a0% · i snitt " + hours(e.avg) + (e.plan ? " + " + hours(e.plan) + " planering" + (auto ? " (antaget)" : "") : "") + " per vecka";
+    var e = employment(p);
+    return "Arbetar " + e.pct + "\u00a0% · i snitt " + hours(e.avg) + (e.plan ? " + " + hours(e.plan) + " planering" : "") + " per vecka";
   }
 
   // One colleague: today's shift and their week, with arrows to change week.
@@ -1281,7 +1477,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   // Settings: everyday choices on the first page, schedule and rules as rows that open their own page.
-  var SUBS = [["file", "Schemafil"], ["week", "Schemavecka"], ["plan", "Planeringstid"], ["time", "Rast"], ["help", "Vilka Excel-filer fungerar?"]];
+  var SUBS = [["file", "Schemafil"], ["week", "Schemavecka"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["time", "Rast"], ["help", "Vilka Excel-filer fungerar?"]];
   function settingsMsg() { return state.msg ? '<div class="msg ' + (state.msg.ok ? "ok" : "err") + '" role="status">' + esc(state.msg.text) + "</div>" : ""; }
   function renderSettings(me) {
     if (state.sub) return renderSub(me, state.sub);
@@ -1305,11 +1501,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
 
     var chosen = Object.keys(PLAN_OF).length;
     var values = { file: DATA.source || "", week: "Nu vecka " + (curW + 1), plan: chosen ? chosen + " valda" : "", time: breakMin() ? breakMin() + " min" : "Ingen", help: "" };
-    out += '<section class="panel"><h3>Schema och regler</h3><ul class="set-list">' + SUBS.map(function (x) {
+    var dl = deptList();
+    values.depts = dl ? dl.length + " st" : "";
+    out += '<section class="panel"><h3>Schema och regler</h3><ul class="set-list">' + SUBS.filter(function (x) { return x[0] !== "depts" || dl; }).map(function (x) {
       return '<li><button class="set-row" data-act="sub" data-s="' + x[0] + '"><span class="sr-t">' + x[1] + '</span><span class="sr-v">' + esc(values[x[0]]) + "</span>" + ICON.right + "</button></li>";
     }).join("") + "</ul></section>";
 
-    if (dbState === "readonly" || dbState === "off") out += '<section class="panel"><h3>Tillfälliga ändringar</h3><p class="hint">' + (dbState === "readonly" ? "Du kan se ändringar men inte spara egna. Den som delade appen behöver ge dig behörigheten Contributor." : "Ändringar syns och sparas bara när appen är öppen via claude.ai.") + "</p></section>";
     return out + "</div>";
   }
 
@@ -1332,7 +1529,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           '<div class="preview-names">' + p.people.map(function (x) { return '<span class="chip">' + esc(x.name) + "</span>"; }).join("") + "</div>" +
           previewHtml(p) +
           (info.notes && info.notes.length ? '<p class="hint">Text som inte är tider visas som den står: ' + info.notes.slice(0, 6).map(esc).join(", ") + (info.notes.length > 6 ? " med flera" : "") + ".</p>" : "") +
-          '<p class="hint">Schemavecka 1 räknas från måndag ' + esc(fmtDate(p.anchor)) + ". Det går att ändra under Schemavecka efter att du har sparat.</p>" +
+          '<h3 class="pend-h">Vilken schemavecka är det nu?</h3><p class="hint">Vecka ' + isoWeek(today()) + " (" + weekRange(mondayOf(today())) + ").</p>" +
+          '<div class="seg-ctl" role="group" aria-label="Schemavecka nu">' + (function () {
+            var cw = rotOf(p, today()), b = "";
+            for (var w = 0; w < p.weeks; w++) b += '<button data-act="pendweek" data-w="' + w + '" aria-pressed="' + (w === cw) + '">' + (w + 1) + "</button>";
+            return b;
+          })() + "</div>" +
           '<div class="btn-row"><button class="btn primary" data-act="save"' + (state.saving ? " disabled" : "") + ">" + (state.saving ? "Sparar..." : "Spara schemat") + '</button><button class="btn" data-act="cancel">Avbryt</button></div>';
       } else {
         out += '<div class="drop" id="drop"><span>Excel-fil (.xlsx) eller CSV</span><span class="btn primary" aria-hidden="true">Ladda upp schema</span>' +
@@ -1352,6 +1554,17 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         '<ul class="role-list">' + DATA.people.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "sv"); }).map(function (x) {
           return '<li><span class="rl-n">' + esc(x.name) + "<small>" + employment(x).pct + " %</small></span>" + planSelect(x) + "</li>";
         }).join("") + "</ul></section>";
+    } else if (sub === "depts") {
+      var dl2 = deptList() || [];
+      out += '<section class="panel"><p class="hint">Tryck på ett namn för att flytta personen till en annan avdelning.</p>' +
+        (state.deptErr ? '<div class="msg err" role="alert">' + esc(state.deptErr) + "</div>" : "") + "</section>";
+      dl2.concat([{ name: "Utan avdelning", none: true }]).forEach(function (d, i) {
+        var idx = d.none ? null : i, members = DATA.people.filter(function (x) { return deptOf(x) === idx; });
+        if (d.none && !members.length) return;
+        out += '<section class="panel dept-edit"><div class="sec-head"><h3>' + esc(d.name) + "</h3>" +
+          (d.none ? "" : '<button class="text-btn" data-act="deptrename" data-i="' + i + '">Byt namn</button>') + "</div>" +
+          (members.length ? '<ul class="dept-members">' + members.map(function (x) { return '<li><button data-act="deptmove" data-name="' + esc(x.name) + '">' + esc(x.name) + ICON.right + "</button></li>"; }).join("") + "</ul>" : '<p class="hint">Ingen här.</p>') + "</section>";
+      });
     } else if (sub === "time") {
       out += '<section class="panel"><p class="hint">Dras av från pass över 5 timmar. Pass över 10 timmar får 30 minuter extra.</p><div class="seg-ctl" role="group" aria-label="Rast i minuter">';
       [0, 30, 45, 60].forEach(function (m) { out += '<button data-act="setbreak" data-m="' + m + '" aria-pressed="' + (m === breakMin()) + '">' + (m ? m + " min" : "Ingen") + "</button>"; });
@@ -1514,7 +1727,50 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
   function isTitleText(s) { return /^(schemavecka|vecka|week|v)\.?\s*\d{1,2}$/i.test(cellStr(s)); }
 
-  function parseGrid(raw, text) {
+  // ---------- Departments ----------
+  var DEPT_RE = /^(avd(elning)?|arbetslag|grupp)\b|^avd\.|^(avdelning|avd\.?)\s/i;
+  // The fill colour of a cell as "RRGGBB", or "" for none or white.
+  function fillOf(ws) {
+    return function (r, c) {
+      var cell = ws[XLSX.utils.encode_cell({ r: r, c: c })], f = cell && cell.s && cell.s.fgColor, rgb = f && f.rgb;
+      if (!rgb || cell.s.patternType === "none") return "";
+      rgb = String(rgb).slice(-6).toUpperCase();
+      return /^[0-9A-F]{6}$/.test(rgb) && rgb !== "FFFFFF" ? rgb : "";
+    };
+  }
+  // A colour name for a department that only has a fill colour.
+  function colorName(rgb) {
+    var r = parseInt(rgb.slice(0, 2), 16) / 255, g = parseInt(rgb.slice(2, 4), 16) / 255, b = parseInt(rgb.slice(4, 6), 16) / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    if (d < 0.06) return l > 0.9 ? "Vit" : l < 0.2 ? "Svart" : "Grå";
+    var hue = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    hue *= 60;
+    if (hue < 12 || hue >= 340) return l > 0.75 ? "Rosa" : "Röd";
+    if (hue < 45) return l > 0.75 ? "Persika" : "Orange";
+    if (hue < 70) return "Gul";
+    if (hue < 165) return "Grön";
+    if (hue < 200) return "Turkos";
+    if (hue < 255) return "Blå";
+    if (hue < 290) return "Lila";
+    return "Rosa";
+  }
+  function setDepts(res, deptOf, deptInfo) {
+    var keys = [];
+    res.people.forEach(function (p) { var k = deptOf[p.name]; if (k && keys.indexOf(k) < 0) keys.push(k); });
+    if (keys.length < 2) return;
+    var plain = keys.filter(function (k) { return !deptInfo[k].color && !deptInfo[k].title; }).length, n = 0, used = {};
+    res.depts = keys.map(function (k) {
+      var i = deptInfo[k], name = i.title || (i.color ? colorName(i.color) : plain > 1 ? "Övriga " + (++n) : "Övriga");
+      if (used[name]) name += " " + (++used[name]); else used[name] = 1;
+      var d = { name: name }; if (i.color) d.color = "#" + i.color;
+      return d;
+    });
+    res.people.forEach(function (p) { var k = deptOf[p.name]; if (k) p.dept = keys.indexOf(k); });
+  }
+
+  function parseGrid(raw, text, fill) {
+    fill = fill || function () { return ""; };
+    var deptOf = {}, deptInfo = {};
     var headers = [];
     var nRows = Math.max(raw.length, text.length);
     for (var r = 0; r < nRows; r++) {
@@ -1629,10 +1885,16 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       }
 
       var block = { names: [], entries: [], weeks: blockWeeks, weekCol: weekCol >= 0, anchor: dated ? addDays(mondayOf(dated.date), -dated.w * 7) : null, title: weekTitle(text, Math.max(bi ? headers[bi - 1].r + 1 : 0, h.r - 3), h.r, dayCols) };
-      var lastName = null, autoWeek = 0, group = [], cont = 0;
+      var lastName = null, autoWeek = 0, group = [], cont = 0, seg = 0, title = null, gap = false;
+      // "Avdelning Blå" just above the heading row names the department of this block.
+      for (var tr = h.r - 1; tr >= Math.max(bi ? headers[bi - 1].r + 1 : 0, h.r - 3) && !title; tr--) (text[tr] || []).forEach(function (v) { if (!title && DEPT_RE.test(cellStr(v)) && cellStr(v).length <= 40) title = cellStr(v); });
       for (var r = start; r < end; r++) {
         var row = text[r] || [], rawRow = raw[r] || [];
         var name = cellStr(row[nameCol]);
+        // Departments: a blank row between groups, a fill colour on the names, or a heading row like "Avdelning Ugglan".
+        var emptyDays = h.cols.every(function (col) { for (var k = col.c; k < col.end; k++) if (cellStr(row[k])) return false; return true; });
+        if (!name && emptyDays) { if (lastName && !gap) { seg++; gap = true; title = null; } group = []; cont = 0; continue; }
+        if (name && emptyDays && DEPT_RE.test(name)) { if (!gap) seg++; gap = true; title = name; group = []; cont = 0; continue; }
         if (name && lastCol >= 0) name = (name + " " + cellStr(row[lastCol])).trim();
         var cells = h.cols.map(function (col) { return dayCell(rawRow, row, col); });
         if (!name || isTitleText(name)) {
@@ -1655,6 +1917,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         var key = null;
         if (weekCol >= 0) { var m = cellStr(row[weekCol]).match(/\d+/); key = m ? +m[0] : autoWeek + 1; autoWeek = key; }
         block.entries.push({ name: name, key: key, cont: 0, cols: h.cols, cells: cells });
+        gap = false;
+        if (!deptOf[name]) {
+          var color = fill(r, nameCol), dk = color ? "c" + color : title ? "t" + norm(title) : "s" + bi + "." + seg;
+          deptOf[name] = dk;
+          if (!deptInfo[dk]) deptInfo[dk] = { color: color, title: title };
+        }
         if (group.indexOf(name) < 0) group.push(name);
         if (block.names.indexOf(name) < 0) block.names.push(name);
         lastName = name;
@@ -1707,10 +1975,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         if (e.cells[i] || people[e.name][idx] == null) people[e.name][idx] = e.cells[i];
       });
     });
-    return finish(order, people, extras, maxW, anchor, "grid");
+    return finish(order, people, extras, maxW, anchor, "grid", deptOf, deptInfo);
   }
 
-  function finish(order, people, extras, maxW, anchor, kind) {
+  function finish(order, people, extras, maxW, anchor, kind, deptOf, deptInfo) {
     var list = order.map(function (n) {
       var s = [], x = [], hasX = false;
       for (var i = 0; i < maxW * 7; i++) { s.push(people[n][i] || ""); var t = (extras[n] || [])[i] || ""; x.push(t); if (t) hasX = true; }
@@ -1718,7 +1986,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       return p;
     }).filter(function (p) { return p.shifts.some(Boolean); });
     if (!list.length) return null;
-    return { weeks: maxW, people: list, anchor: anchor ? ymd(anchor) : null, kind: kind };
+    var res = { weeks: maxW, people: list, anchor: anchor ? ymd(anchor) : null, kind: kind };
+    if (deptOf) setDepts(res, deptOf, deptInfo);
+    return res;
   }
 
   // ---------- Layout 2: days as rows, one column per person ----------
@@ -1797,7 +2067,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     ["week", /^(v|v\.|vecka|veckonr|week|wk|schemavecka|vnr)$/],
     ["start", /^(start|starttid|fran|fran kl|in|borjar|kommer|from|start time|tid fran)$/],
     ["end", /^(slut|sluttid|till|till kl|ut|slutar|gar|to|end|end time|tid till)$/],
-    ["shift", /^(pass|tid|tider|arbetstid|schema|skift|shift|arbetspass|tjanstgoring)$/]
+    ["shift", /^(pass|tid|tider|arbetstid|schema|skift|shift|arbetspass|tjanstgoring)$/],
+    ["dept", /^(avdelning|avd|grupp|arbetslag|department)$/]
   ];
   function parseList(raw, text) {
     var nRows = Math.max(raw.length, text.length);
@@ -1823,7 +2094,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           shift = a && b ? a + "-" + b : codeOf(tr[cols.start] || tr[cols.end]);
         } else shift = codeOf(tr[cols.shift]);
         var wk = cols.week != null ? cellStr(tr[cols.week]).match(/\d+/) : null;
-        rows.push({ name: name, dow: di.dow, date: di.date, wk: wk ? +wk[0] : null, shift: shift });
+        rows.push({ name: name, dow: di.dow, date: di.date, wk: wk ? +wk[0] : null, shift: shift, dept: cols.dept != null ? cellStr(tr[cols.dept]) : "" });
       }
       if (rows.length < 3) continue;
       var anchor = null;
@@ -1838,24 +2109,25 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         var last = {};
         rows.forEach(function (x) { var l = last[x.name]; x.w = l ? (x.dow < l.dow ? l.w + 1 : l.w) : 0; last[x.name] = x; });
       }
-      var people = {}, order = [], maxW = 0;
+      var people = {}, order = [], maxW = 0, deptOf = {}, deptInfo = {};
       rows.forEach(function (x) {
+        if (x.dept && !deptOf[x.name]) { deptOf[x.name] = "t" + x.dept; deptInfo["t" + x.dept] = { title: x.dept }; }
         if (!people[x.name]) { people[x.name] = []; order.push(x.name); }
         var idx = x.w * 7 + x.dow, cur = people[x.name][idx];
         // Two rows for the same day are a split shift.
         people[x.name][idx] = cur && x.shift && cur !== x.shift ? cur + " / " + x.shift : (x.shift || cur || "");
         if (x.w + 1 > maxW) maxW = x.w + 1;
       });
-      return finish(order, people, {}, maxW, anchor, "list");
+      return finish(order, people, {}, maxW, anchor, "list", deptOf, deptInfo);
     }
     return null;
   }
 
-  function parseSheet(raw, text) {
+  function parseSheet(raw, text, fill) {
     var best = null;
     [parseGrid, parseRows, parseList].forEach(function (fn) {
       var res = null;
-      try { res = fn(raw, text); } catch (e) { res = null; }
+      try { res = fn(raw, text, fill); } catch (e) { res = null; }
       if (!res) return;
       res.score = 0;
       res.people.forEach(function (p) { p.shifts.forEach(function (s) { if (parseShift(s).kind === "work") res.score++; }); });
@@ -1883,11 +2155,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function parseWorkbook(wb, filename) {
     var sheets = wb.SheetNames.map(function (sn) {
       var ws = wb.Sheets[sn];
-      return { name: sn, raw: XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "", blankrows: true }), text: XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "", blankrows: true }) };
+      return { name: sn, fill: fillOf(ws), raw: XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "", blankrows: true }), text: XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "", blankrows: true }) };
     });
     LEGEND = findLegend(sheets.map(function (s) { return s.text; }));
     var results = [];
-    sheets.forEach(function (s) { var res = parseSheet(s.raw, s.text); if (res) { res.sheet = s.name; results.push(res); } });
+    sheets.forEach(function (s) { var res = parseSheet(s.raw, s.text, s.fill); if (res) { res.sheet = s.name; results.push(res); } });
     if (!results.length) return null;
 
     var pick;
@@ -1901,8 +2173,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       pick = joinWeeks(ordered);
     } else if (results.length > 1 && sameWeeks && !shared) {
       // One sheet per group of people (e.g. per department), same weeks: put everyone together.
-      pick = { weeks: results[0].weeks, anchor: results[0].anchor, kind: results[0].kind, people: [] };
-      results.forEach(function (r) { r.people.forEach(function (p) { if (!pick.people.some(function (x) { return x.name === p.name; })) pick.people.push(p); }); if (!pick.anchor) pick.anchor = r.anchor; });
+      // Each sheet is then its own department, named after the sheet.
+      pick = { weeks: results[0].weeks, anchor: results[0].anchor, kind: results[0].kind, people: [], depts: results.map(function (r) { return { name: r.sheet }; }) };
+      results.forEach(function (r, ri) { r.people.forEach(function (p) { if (!pick.people.some(function (x) { return x.name === p.name; })) { p.dept = ri; pick.people.push(p); } }); if (!pick.anchor) pick.anchor = r.anchor; });
     } else {
       pick = results.slice().sort(function (a, b) { return b.score - a.score; })[0];
     }
@@ -1912,7 +2185,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       var cw = DATA.weeks === pick.weeks ? rotWeek(today()) : 0;
       anchor = ymd(addDays(mondayOf(today()), -cw * 7));
     }
-    return { example: false, source: filename, updated: new Date().toISOString(), weeks: pick.weeks, anchor: anchor, breakMin: breakMin(), minStaff: DATA.minStaff,  people: pick.people, kind: pick.kind };
+    return { example: false, source: filename, updated: new Date().toISOString(), weeks: pick.weeks, anchor: anchor, breakMin: breakMin(), minStaff: DATA.minStaff,  people: pick.people, depts: pick.depts, kind: pick.kind };
   }
   function joinWeeks(results) {
     var names = [], map = {}, xmap = {};
@@ -1924,10 +2197,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     });
     var anchor = null;
     results.forEach(function (r, wi) { if (!anchor && r.anchor) anchor = ymd(addDays(parseYmd(r.anchor), -wi * 7)); });
-    return { weeks: results.length, anchor: anchor, kind: results[0].kind, people: names.map(function (n) {
+    var first = results[0];
+    return { weeks: results.length, anchor: anchor, kind: first.kind, depts: first.depts, people: names.map(function (n) {
       var s = [], x = [], hasX = false;
       for (var i = 0; i < results.length * 7; i++) { s.push(map[n][i] || ""); x.push(xmap[n][i] || ""); if (xmap[n][i]) hasX = true; }
       var p = { name: n, shifts: s }; if (hasX) p.extras = x;
+      first.people.forEach(function (q) { if (q.name === n && q.dept != null) p.dept = q.dept; });
       return p;
     }) };
   }
@@ -1939,9 +2214,27 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     return Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; });
   }
 
+  // The Excel reader is large and only needed when a file is uploaded, so it is fetched then
+  // (or as soon as the upload page is shown) instead of when the app starts.
+  var xlsxWait = null;
+  function loadXlsx(cb) {
+    if (window.XLSX) { cb(); return; }
+    if (!xlsxWait) {
+      xlsxWait = [];
+      var sc = document.createElement("script");
+      sc.src = XLSX_SRC; sc.async = true;
+      sc.onload = sc.onerror = function () { var w = xlsxWait; xlsxWait = null; if (!window.XLSX) sc.remove(); w.forEach(function (f) { f(); }); };
+      document.head.appendChild(sc);
+    }
+    xlsxWait.push(cb);
+  }
   function handleFile(file) {
     state.msg = null; state.pending = null;
-    if (!window.XLSX) { state.msg = { ok: false, text: "Excel-läsaren kunde inte laddas. Kontrollera internetanslutningen och försök igen." }; render(); return; }
+    if (!window.XLSX) {
+      state.msg = { ok: true, text: "Läser filen..." }; render();
+      loadXlsx(function () { if (window.XLSX) handleFile(file); else { state.msg = { ok: false, text: "Excel-läsaren kunde inte laddas. Kontrollera internetanslutningen och försök igen." }; render(); } });
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function () {
       try {
@@ -1951,7 +2244,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           var str;
           try { str = new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch (e2) { str = new TextDecoder("windows-1252").decode(bytes); }
           wb = XLSX.read(str.replace(/^\ufeff/, ""), { type: "string", raw: true });
-        } else wb = XLSX.read(bytes, { type: "array", cellDates: true });
+        } else wb = XLSX.read(bytes, { type: "array", cellDates: true, cellStyles: true });
         var parsed = parseWorkbook(wb, file.name);
         if (!parsed) state.msg = { ok: false, text: "Hittade inget schema i " + file.name + ". Filen behöver en rubrikrad med veckodagar (Mån, Tis, Ons ...) och namnen i en egen kolumn. Se exemplet längre ner." };
         else {
@@ -2032,7 +2325,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // Swipe sideways to change week (Mitt schema, or in a colleague's sheet). The week follows the finger;
   // once the movement is clearly sideways the page stops scrolling up and down.
   var swipe = null;
-  function swipeEls() {
+  function swipeEls(kind) {
+    if (kind === "oc") return Array.prototype.slice.call(app.querySelectorAll(".oc-card [data-ocslide]"));
+    if (kind === "fav") return Array.prototype.slice.call(app.querySelectorAll(".fav-sec [data-favslide]"));
     var scope = state.person ? app.querySelector(".sheet") : app.querySelector("main") || app.querySelector("#deck");
     return scope ? Array.prototype.slice.call(scope.querySelectorAll("[data-slide]")) : [];
   }
@@ -2053,7 +2348,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (e.target.closest("input, select, nav")) return;
     var sc = e.target.closest(".fav-scroll");
     if (sc && sc.scrollWidth > sc.clientWidth + 1) return;
-    var t = e.touches[0]; swipe = { x: t.clientX, y: t.clientY, t: Date.now(), axis: null, dx: 0, els: [] };
+    // Each part of Mitt schema swipes on its own: the open/close card by day, the week and the colleagues by week.
+    var kind = "week";
+    if (!state.person) {
+      kind = e.target.closest(".oc-card") ? "oc" : e.target.closest(".fav-sec") ? "fav" : e.target.closest(".week-sec") ? "week" : null;
+      if (!kind) return;
+    }
+    var t = e.touches[0]; swipe = { x: t.clientX, y: t.clientY, t: Date.now(), axis: null, dx: 0, els: [], kind: kind };
   }, { passive: true });
   app.addEventListener("touchmove", function (e) {
     if (!swipe) return;
@@ -2061,16 +2362,18 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (!swipe.axis) {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       if (Math.abs(dx) <= Math.abs(dy)) { swipe = null; return; }
-      swipe.axis = "x"; swipe.els = swipeEls();
+      swipe.axis = "x"; swipe.els = swipeEls(swipe.kind);
     }
     if (e.cancelable) e.preventDefault();
     swipe.dx = dx;
     if (!reduceMotion) swipeMove(swipe.els, dx, 1 - Math.min(0.5, Math.abs(dx) / 700));
   }, { passive: false });
   // The arrows move the week out the same way a swipe does.
-  function slideWeek(dir) {
-    var step = function () { if (state.person) stepPersonWeek(dir); else stepWeek(dir); };
-    var els = swipeEls();
+  function stepFor(kind, dir) { if (kind === "oc") stepOc(dir); else if (kind === "fav") stepFav(dir); else if (state.person) stepPersonWeek(dir); else stepWeek(dir); }
+  function slideWeek(dir, kind) {
+    var step = function () { stepFor(kind, dir); };
+    if (kind === "oc" && ocDayFrom(state.ocOffset + dir, dir) == null || kind === "fav" && ocDayFrom(state.favOffset + dir, dir) == null) return;
+    var els = swipeEls(kind);
     if (reduceMotion || !els.length) { step(); return; }
     swipeMove(els, -dir * window.innerWidth * 0.6, 0, "transform 0.15s ease-in, opacity 0.15s ease-in");
     setTimeout(function () { slideFar = true; step(); }, 140);
@@ -2081,10 +2384,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var fast = Math.abs(sw.dx) > 40 && Math.abs(sw.dx) / Math.max(1, Date.now() - sw.t) > 0.4;
     if (Math.abs(sw.dx) < w * 0.25 && !fast) { swipeMove(sw.els, 0, null, "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.22s"); return; }
     var dir = sw.dx < 0 ? 1 : -1;
-    if (reduceMotion) { if (state.person) stepPersonWeek(dir); else stepWeek(dir); return; }
+    if (sw.kind === "oc" && ocDayFrom(state.ocOffset + dir, dir) == null || sw.kind === "fav" && ocDayFrom(state.favOffset + dir, dir) == null) { swipeMove(sw.els, 0, null, "transform 0.22s"); return; }
+    if (reduceMotion) { stepFor(sw.kind, dir); return; }
     // Finish the movement out of view, then bring the new week in from the other side.
     swipeMove(sw.els, -dir * w, 0, "transform 0.15s ease-in, opacity 0.15s ease-in");
-    setTimeout(function () { slideFar = true; if (state.person) stepPersonWeek(dir); else stepWeek(dir); }, 140);
+    setTimeout(function () { slideFar = true; stepFor(sw.kind, dir); }, 140);
   }
   app.addEventListener("touchend", swipeEnd);
   // Which card of the cover screen is showing, for the dots.
@@ -2131,6 +2435,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // Remember whether "Schemafil och regler" is open.
 
   // ---------- Events ----------
+  app.addEventListener("submit", function (e) {
+    if (!e.target.matches || !e.target.matches("[data-form=deptname]")) return;
+    e.preventDefault();
+    var v = document.getElementById("dept-name").value.trim(), i = state.deptPop && state.deptPop.i;
+    state.deptPop = null; state.deptErr = null;
+    if (v && i != null) writeDept("name", i, v.slice(0, 40)); else render();
+  });
   app.addEventListener("click", function (e) {
     var b = e.target.closest("[data-act]"); if (!b) return;
     var act = b.getAttribute("data-act");
@@ -2138,14 +2449,21 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (act === "sub") { state.view = "settings"; state.sub = b.getAttribute("data-s"); state.picking = false; lsSet("skift.view", "settings"); render(); window.scrollTo(0, 0); return; }
     if (act === "subback") { state.sub = null; state.msg = null; render(); window.scrollTo(0, 0); return; }
     if (act === "gofavs") { state.view = "settings"; lsSet("skift.view", "settings"); render(); var fpn = document.getElementById("fav-panel"); if (fpn) fpn.scrollIntoView(); return; }
+    if (act === "daymode") { state.dayMode = b.getAttribute("data-m"); lsSet("skift.daymode", state.dayMode === "dept" ? "dept" : null); render(); return; }
+    if (act === "peoplemode") { state.peopleMode = b.getAttribute("data-m"); lsSet("skift.peoplemode", state.peopleMode === "dept" ? "dept" : null); render(); return; }
     if (act === "go") { state.view = b.getAttribute("data-view"); state.picking = false; state.sub = null; if (state.view !== "settings") state.msg = null; lsSet("skift.view", state.view); render(); window.scrollTo(0, 0); }
     else if (act === "pick") { state.picking = true; if (state.view === "settings") state.view = "home"; render(); window.scrollTo(0, 0); }
     else if (act === "unpick") { state.picking = false; render(); }
     else if (act === "choose") { state.profile = b.getAttribute("data-name"); state.picking = false; state.pickQ = ""; lsSet("skift.profile", state.profile); buzz(); render(); window.scrollTo(0, 0); }
     else if (act === "week") { slideWeek(+b.getAttribute("data-d")); }
+    else if (act === "favweek") { slideWeek(+b.getAttribute("data-d"), "fav"); }
+    else if (act === "fav0") { var f0 = ocDayFrom(0, 1); if (f0 != null && state.favOffset !== f0) { slideSel = "[data-favslide]"; slideDir = f0 < state.favOffset ? -1 : 1; state.favOffset = f0; render(); buzz(); } }
+    else if (act === "oc0") { var o0 = ocDayFrom(0, 1); if (o0 != null && state.ocOffset !== o0) { slideSel = "[data-ocslide]"; slideDir = o0 < state.ocOffset ? -1 : 1; state.ocOffset = o0; render(); buzz(); } }
+    else if (act === "ocday") { slideWeek(+b.getAttribute("data-d"), "oc"); }
     else if (act === "week0") { var w0 = state.weekOffset; if (w0) stepWeek(-w0); }
     else if (act === "cancel") { state.pending = null; state.msg = null; render(); }
     else if (act === "save" && state.pending && !state.saving) { save(state.pending, "Schemat är sparat och visas nu för alla som öppnar appen."); }
+    else if (act === "pendweek" && state.pending) { state.pending.anchor = ymd(addDays(mondayOf(today()), -(+b.getAttribute("data-w")) * 7)); render(); }
     else if (act === "setweek" && !state.saving) {
       var w = +b.getAttribute("data-w");
       if (w === rotWeek(today())) return;
@@ -2154,6 +2472,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       nd.updated = new Date().toISOString();
       save(nd, "Den här veckan är nu schemavecka " + (w + 1) + ".");
     }
+    else if (act === "planopen") { state.planOpen = b.getAttribute("data-name"); render(); var pf = app.querySelector(".plan-pop [aria-pressed=true]"); if (pf) pf.focus(); }
+    else if (act === "planclose") { state.planOpen = null; render(); }
+    else if (act === "deptrename") { state.deptPop = { kind: "rename", i: +b.getAttribute("data-i") }; render(); var di = document.getElementById("dept-name"); if (di) { di.focus(); di.select(); } }
+    else if (act === "deptmove") { state.deptPop = { kind: "move", name: b.getAttribute("data-name") }; render(); }
+    else if (act === "deptset") { var mv = state.deptPop.name; state.deptPop = null; state.deptErr = null; writeDept("move", mv, +b.getAttribute("data-i")); }
+    else if (act === "deptclose") { state.deptPop = null; render(); }
+    else if (act === "setplan") { var ph = b.getAttribute("data-h"); state.planOpen = null; writePlan(b.getAttribute("data-name"), ph === "" ? null : +ph); }
     else if (act === "setbreak" && !state.saving) {
       var bm = +b.getAttribute("data-m");
       if (bm === breakMin()) return;
@@ -2168,9 +2493,6 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "pweek") { slideWeek(+b.getAttribute("data-d")); }
     else if (act === "pweek0") { if (state.person && state.person.week) stepPersonWeek(-state.person.week); }
     else if (act === "closeedit") { closeSheet(); }
-    else if (act === "settype" && state.edit) { state.edit.form.type = b.getAttribute("data-t"); state.edit.form.err = null; render(); }
-    else if (act === "saveedit" && state.edit && !state.edit.form.busy) { saveEdit(); }
-    else if (act === "deledit" && state.edit && !state.edit.form.busy) { writeChange(state.edit.person, state.edit.date, null); }
     else if (act === "exportcal") { var mp = state.profile && personByName(state.profile); if (mp) exportCalendar(mp); }
     else if (act === "settheme") { lsSet("skift.theme", b.getAttribute("data-t") === "auto" ? null : b.getAttribute("data-t")); applyTheme(); render(); }
     else if (act === "droplocal") { lsSet("skift.local", null); LOCAL = null; DATA = EMBEDDED; usingLocal = false; shiftCache = {}; state.msg = null; render(); }
@@ -2178,13 +2500,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   app.addEventListener("input", function (e) {
     if (e.target.id === "pick-q") { state.pickQ = e.target.value; filterPicker(state.pickQ); return; }
     if (e.target.id === "people-q") { state.peopleQ = e.target.value; filterList(state.peopleQ, "#people-list", "people-none"); return; }
-    if (!state.edit) return;
-    var f = state.edit.form;
-    if (e.target.id === "ed-start") f.start = e.target.value;
-    else if (e.target.id === "ed-end") f.end = e.target.value;
-    else if (e.target.id === "ed-note") f.note = e.target.value;
   });
   app.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && (state.planOpen || state.deptPop)) { state.planOpen = null; state.deptPop = null; render(); return; }
     if (e.key === "Escape" && (state.edit || state.person)) { closeSheet(); return; }
     if (e.key === "Enter" && e.target.id === "pick-q") {
       var vis = Array.prototype.filter.call(app.querySelectorAll(".plist li"), function (li) { return !li.hidden; });
@@ -2194,7 +2512,6 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if ((e.key === "Enter" || e.key === " ") && e.target.getAttribute && e.target.getAttribute("role") === "button" && e.target.hasAttribute("data-act")) { e.preventDefault(); e.target.click(); }
   });
   app.addEventListener("change", function (e) {
-    if (e.target.classList && e.target.classList.contains("plan-sel")) { var v = e.target.value; writePlan(e.target.getAttribute("data-name"), v === "" ? null : +v); return; }
     if (e.target.id === "file-input" && e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
   });
   app.addEventListener("dragover", function (e) { var d = e.target.closest && e.target.closest("#drop"); if (d) { e.preventDefault(); d.classList.add("over"); } });
