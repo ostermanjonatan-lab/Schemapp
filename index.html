@@ -392,7 +392,8 @@ a.btn { text-decoration: none; color: var(--ink); }
 .plan-btn { font: inherit; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-height: 40px; padding: 0 10px 0 12px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 .plan-btn svg { width: 14px; height: 14px; stroke: var(--muted); transition: transform 0.15s; }
 .plan-btn:disabled { opacity: 0.5; cursor: default; }
-.plan-pop { position: fixed; z-index: 21; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100% - 32px)); background: var(--surface); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(23, 13, 28, 0.3); }
+.pop-bg { z-index: 30; }
+.plan-pop { position: fixed; z-index: 31; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100% - 32px)); background: var(--surface); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(23, 13, 28, 0.3); }
 .dept-edit .sec-head h3 { margin: 0; }
 .dept-members { list-style: none; margin: 4px 0 0; padding: 0; }
 .dept-members li + li { border-top: 1px solid var(--line); }
@@ -773,11 +774,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       }, function () {});
       // New names for departments and people moved to another department, shared by everyone.
       db.collection("depts").onSnapshot(function (snap) {
-        var e = { names: {}, moves: {} };
+        var e = { names: {}, moves: {}, people: {} };
         snap.docs.forEach(function (doc) {
           var x = doc.data(); if (!x) return;
           if (x.kind === "name" && typeof x.idx === "number" && x.name) e.names[x.idx] = x.name;
           else if (x.kind === "move" && x.person && typeof x.dept === "number") e.moves[x.person] = x.dept;
+          else if (x.kind === "pname" && x.orig && x.name) e.people[x.orig] = x.name;
         });
         DEPT_EDIT = e;
         render();
@@ -820,23 +822,39 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // Departments come from the file; names and moves made in the app are kept on top of it.
   // Without the shared store (outside claude.ai) they are kept on this device.
   var DEPT_EDIT = readDeptEdit();
-  function readDeptEdit() { try { var e = JSON.parse(lsGet("skift.depts") || "null"); if (e && e.names && e.moves) return e; } catch (x) {} return { names: {}, moves: {} }; }
+  function readDeptEdit() { try { var e = JSON.parse(lsGet("skift.depts") || "null"); if (e && e.names && e.moves) { e.people = e.people || {}; return e; } } catch (x) {} return { names: {}, moves: {}, people: {} }; }
+  // Staff can be renamed in the app. The file's name stays in p.orig and is what plans, moves and
+  // renames are stored under; p.name is what is shown. Your profile and favourites follow a rename.
+  function applyNames() {
+    DATA.people.forEach(function (p) {
+      if (!p.orig) p.orig = p.name;
+      var before = p.name, after = DEPT_EDIT.people[p.orig] || p.orig;
+      if (before === after) return;
+      p.name = after;
+      if (state.profile === before) { state.profile = after; lsSet("skift.profile", after); }
+      var fi = state.favs.indexOf(before);
+      if (fi >= 0) { state.favs[fi] = after; lsSet("skift.favs", JSON.stringify(state.favs)); }
+      if (state.person && state.person.name === before) state.person.name = after;
+    });
+  }
+  function keyOf(p) { return p.orig || p.name; }
+  function keyOfName(n) { var p = personByName(n); return p ? keyOf(p) : n; }
   function deptList() {
     if (!DATA.depts || DATA.depts.length < 2) return null;
     return DATA.depts.map(function (d, i) { return { name: DEPT_EDIT.names[i] || d.name, color: d.color }; });
   }
-  function deptOf(p) { var m = DEPT_EDIT.moves[p.name]; return m != null && DATA.depts && DATA.depts[m] ? m : p.dept != null ? p.dept : null; }
+  function deptOf(p) { var m = DEPT_EDIT.moves[keyOf(p)]; return m != null && DATA.depts && DATA.depts[m] ? m : p.dept != null ? p.dept : null; }
   function writeDept(kind, key, value) {
-    if (kind === "name") DEPT_EDIT.names[key] = value; else DEPT_EDIT.moves[key] = value;
+    if (kind === "name") DEPT_EDIT.names[key] = value; else if (kind === "pname") DEPT_EDIT.people[key] = value; else DEPT_EDIT.moves[key] = value;
     buzz(); render();
     if (!dbRef) { lsSet("skift.depts", JSON.stringify(DEPT_EDIT)); return; }
-    var id = kind === "name" ? "n" + key : "m_" + changeId(key, "").slice(1);
-    dbRef.collection("depts").doc(id).set(kind === "name" ? { kind: "name", idx: key, name: value } : { kind: "move", person: key, dept: value }).then(null, function () {
+    var id = kind === "name" ? "n" + key : (kind === "pname" ? "p_" : "m_") + changeId(key, "").slice(1);
+    dbRef.collection("depts").doc(id).set(kind === "name" ? { kind: "name", idx: key, name: value } : kind === "pname" ? { kind: "pname", orig: key, name: value } : { kind: "move", person: key, dept: value }).then(null, function () {
       state.deptErr = "Ändringen kunde inte sparas. Försök igen."; render();
     });
   }
   function planOf(p) {
-    if (PLAN_OF[p.name] != null) return { h: PLAN_OF[p.name], auto: false };
+    if (PLAN_OF[keyOf(p)] != null) return { h: PLAN_OF[keyOf(p)], auto: false };
     var avg = weekAverage(p);
     var fits = GUESS_HOURS.map(function (full) {
       var rate = avg / ((fullTime() - full) * 60) * 100, off = Infinity;
@@ -847,6 +865,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
   function writePlan(name, h) {
     if (!dbRef) return;
+    name = keyOfName(name);
     var ref = dbRef.collection("plan").doc("p_" + changeId(name, "").slice(1));
     var prev = PLAN_OF[name];
     if (h != null) PLAN_OF[name] = h; else delete PLAN_OF[name];
@@ -860,15 +879,18 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // Planeringstid is chosen in the app, not with the phone's own picker: tapping the value opens
   // a small popup with the choices. Picking one saves it and closes the popup.
   function planSelect(p) {
-    var cur = PLAN_OF[p.name], g = planOf(p), ok = dbState === "ready";
+    var cur = PLAN_OF[keyOf(p)], g = planOf(p), ok = dbState === "ready";
     var val = cur != null ? numText(cur) + "\u00a0h" : g.auto ? hours(g.h * 60) : "Ingen vald";
     return '<button class="plan-btn" data-act="planopen" data-name="' + esc(p.name) + '" aria-haspopup="dialog" aria-label="Planeringstid för ' + esc(p.name) + ", " + val + '"' + (ok ? "" : " disabled") + ">" + val + ICON.down + "</button>";
   }
   function renderDeptPop() {
-    var dp = state.deptPop, dl = deptList(); if (!dl) return "";
+    var dp = state.deptPop, dl = deptList(); if (!dl && dp.kind !== "pname") return "";
     var head = function (title, sub) { return '<div class="sheet-head"><div style="min-width:0"><h3 id="plan-title">' + esc(title) + '</h3><div class="sub">' + sub + '</div></div><button class="icon-btn" data-act="deptclose" aria-label="Stäng">' + ICON.close + "</button></div>"; };
-    var out = '<div class="sheet-bg" data-act="deptclose"></div><div class="plan-pop" role="dialog" aria-modal="true" aria-labelledby="plan-title">';
-    if (dp.kind === "rename") {
+    var out = '<div class="sheet-bg pop-bg" data-act="deptclose"></div><div class="plan-pop" role="dialog" aria-modal="true" aria-labelledby="plan-title">';
+    if (dp.kind === "pname") {
+      out += head("Byt namn", "Heter nu " + esc(dp.name)) + (dp.err ? '<div class="msg err" role="alert">' + esc(dp.err) + "</div>" : "") +
+        '<form class="dept-form" data-form="deptname"><input id="dept-name" type="text" maxlength="40" value="' + esc(dp.value != null ? dp.value : dp.name) + '" aria-label="Nytt namn" autocomplete="off"><button class="btn" type="submit">Spara namn</button></form>';
+    } else if (dp.kind === "rename") {
       out += head("Byt namn", "Avdelningen heter nu " + esc(dl[dp.i].name)) +
         '<form class="dept-form" data-form="deptname"><input id="dept-name" type="text" maxlength="40" value="' + esc(dl[dp.i].name) + '" aria-label="Nytt namn" autocomplete="off"><button class="btn" type="submit">Spara namn</button></form>';
     } else {
@@ -882,7 +904,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
   function renderPlanPop() {
     var p = personByName(state.planOpen); if (!p) return "";
-    var cur = PLAN_OF[p.name], g = planOf(p);
+    var cur = PLAN_OF[keyOf(p)], g = planOf(p);
     return '<div class="sheet-bg" data-act="planclose"></div><div class="plan-pop" role="dialog" aria-modal="true" aria-labelledby="plan-title">' +
       '<div class="sheet-head"><div style="min-width:0"><h3 id="plan-title">' + esc(p.name) + '</h3><div class="sub">Planeringstid per vecka</div></div><button class="icon-btn" data-act="planclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
       '<div class="plan-pick"><button class="auto" data-act="setplan" data-name="' + esc(p.name) + '" data-h="" aria-pressed="' + (cur == null) + '" aria-label="Automatisk' + (g.auto ? ", " + hours(g.h * 60) : "") + '">Auto' + (g.auto ? "<small>" + hours(g.h * 60) + "</small>" : "") + "</button>" +
@@ -978,6 +1000,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
 
   var lastViewKey = null, slideDir = 0, slideFar = false, slideSel = "[data-slide]", lastSheetKind = "";
   function render() {
+    applyNames();
     var me = state.profile && personByName(state.profile);
     var needPick = !me || state.picking;
     // Without a schedule the only thing to do is upload one.
@@ -998,7 +1021,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (state.edit) { html += renderEditor(me); state.edit.fresh = false; }
     else if (state.person) { html += renderPersonSheet(me); state.person.fresh = false; }
     if (state.planOpen && state.view === "settings") html += renderPlanPop();
-    if (state.deptPop && (state.view === "settings" || state.view === "day" || state.view === "grid")) html += renderDeptPop();
+    if (state.deptPop) html += renderDeptPop();
     var focusId = document.activeElement && document.activeElement.id;
     var oldDeck = document.getElementById("deck"), deckTop = oldDeck ? oldDeck.scrollTop : 0;
     var oldSheet = app.querySelector(".sheet"), sheetTop = oldSheet ? oldSheet.scrollTop : 0, sheetKind = state.edit ? "edit" : state.person ? "person" : "";
@@ -1469,7 +1492,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }
     var ex = extraOn(p, t);
     return '<div class="sheet-bg' + anim + '" data-act="closesheet"></div><div class="sheet' + anim + '" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="sheet-grab" aria-hidden="true"><span></span></div><div class="wrap sheet-in">' +
-      '<div class="sheet-head"><div style="min-width:0"><h3 id="sheet-title">' + esc(p.name) + (isMe ? " (du)" : "") + '</h3><div class="sub">' + empText(p) + '</div></div><button class="icon-btn" data-act="closesheet" aria-label="Stäng">' + ICON.close + "</button></div>" +
+      '<div class="sheet-head"><div style="min-width:0"><h3 id="sheet-title">' + esc(p.name) + (isMe ? " (du)" : "") + '<button class="pen-btn" data-act="pname" aria-label="Byt namn på ' + esc(p.name) + '">' + ICON.pen + '</button></h3><div class="sub">' + empText(p) + '</div></div><button class="icon-btn" data-act="closesheet" aria-label="Stäng">' + ICON.close + "</button></div>" +
       '<section class="p-today" aria-label="Idag"><div class="group-label">Idag, ' + DAYS[dow(t)].toLowerCase() + " " + shortDate(t) + '</div><div class="p-big">' + big + "</div>" +
       (line ? '<div class="row">' + line + "</div>" : "") + (ex ? '<div class="extra-line">' + esc(ex) + "</div>" : "") + "</section>" +
       weekBlock(p, ps.week, "pweek", true) +
@@ -2439,6 +2462,14 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (!e.target.matches || !e.target.matches("[data-form=deptname]")) return;
     e.preventDefault();
     var v = document.getElementById("dept-name").value.trim(), i = state.deptPop && state.deptPop.i;
+    if (state.deptPop && state.deptPop.kind === "pname") {
+      var who = personByName(state.deptPop.name);
+      v = v.slice(0, 40);
+      if (v && v !== who.name && personByName(v)) { state.deptPop.err = v + " finns redan. Välj ett annat namn."; state.deptPop.value = v; render(); return; }
+      state.deptPop = null; state.deptErr = null;
+      if (v && who && v !== who.name) writeDept("pname", keyOf(who), v); else render();
+      return;
+    }
     state.deptPop = null; state.deptErr = null;
     if (v && i != null) writeDept("name", i, v.slice(0, 40)); else render();
   });
@@ -2476,7 +2507,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "planclose") { state.planOpen = null; render(); }
     else if (act === "deptrename") { state.deptPop = { kind: "rename", i: +b.getAttribute("data-i") }; render(); var di = document.getElementById("dept-name"); if (di) { di.focus(); di.select(); } }
     else if (act === "deptmove") { state.deptPop = { kind: "move", name: b.getAttribute("data-name") }; render(); }
-    else if (act === "deptset") { var mv = state.deptPop.name; state.deptPop = null; state.deptErr = null; writeDept("move", mv, +b.getAttribute("data-i")); }
+    else if (act === "deptset") { var mv = keyOfName(state.deptPop.name); state.deptPop = null; state.deptErr = null; writeDept("move", mv, +b.getAttribute("data-i")); }
+    else if (act === "pname" && state.person) { state.deptPop = { kind: "pname", name: state.person.name }; render(); var pi = document.getElementById("dept-name"); if (pi) { pi.focus(); pi.select(); } }
     else if (act === "deptclose") { state.deptPop = null; render(); }
     else if (act === "setplan") { var ph = b.getAttribute("data-h"); state.planOpen = null; writePlan(b.getAttribute("data-name"), ph === "" ? null : +ph); }
     else if (act === "setbreak" && !state.saving) {
