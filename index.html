@@ -160,14 +160,14 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .d-name { font-weight: 600; font-size: var(--fs-md); line-height: 1.2; }
 .d-date { color: var(--muted); font-size: var(--fs-xs); }
 .is-today .d-name { color: var(--sage-ink); font-weight: 700; }
-.d-time { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.d-time .t { font-weight: 500; font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
+.d-time { display: flex; flex-direction: column; gap: 1px; }
+.d-time .t { font-weight: 500; font-variant-numeric: tabular-nums; font-size: var(--fs-md); white-space: nowrap; }
 .d-time .t.offtxt { font-family: var(--font-body); color: var(--muted); font-weight: 400; }
 .d-time .lbl { font-size: var(--fs-xs); color: var(--muted); }
 .d-time .notetxt { font-family: var(--font-body); color: var(--warn); font-weight: 600; font-size: var(--fs-md); }
 .d-time .lbl.extra, .tt.extra { color: var(--accent); font-family: var(--font-body); font-weight: 500; }
 .extra-line { font-size: var(--fs-sm); color: var(--accent); font-weight: 500; }
-.d-hrs { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.d-hrs { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
 .week-sum { display: flex; justify-content: space-between; gap: 12px; padding: 0 4px; color: var(--muted); font-size: var(--fs-sm); }
 .swipe-hint { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin: -8px 0 -10px; }
 .oc-card .swipe-hint { margin-top: 0; }
@@ -258,7 +258,8 @@ nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background
 nav.tabs .wrap { display: grid; grid-template-columns: repeat(4, 1fr); height: var(--nav-h); }
 nav.tabs button { background: none; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--fs-xs); font-weight: 500; color: var(--muted); cursor: pointer; padding: 0; }
 nav.tabs svg { width: 20px; height: 20px; stroke: currentColor; }
-nav.tabs button { position: relative; }
+nav.tabs button { position: relative; min-width: 0; }
+nav.tabs button span { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: min(var(--fs-xs), 3.2vw); }
 nav.tabs button[aria-current="page"] { color: var(--accent); font-weight: 600; }
 nav.tabs button[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--hl); }
 
@@ -1264,7 +1265,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         '<div><div class="d-name">' + DAYS_SHORT[i] + '</div><div class="d-date">' + (isT ? "Idag" : shortDate(d)) + "</div>" + (s.closed ? "" : dayLabelHtml(d)) + '</div><div class="d-time">' + tcell + '</div><div class="d-hrs">' + (s.kind === "work" ? hours(workMinutes(s)) : "") + "</div></li>";
     }
     var label = offset === 0 ? "Den här veckan" : offset === 1 ? "Nästa vecka" : offset === -1 ? "Förra veckan" : "Vecka " + isoWeek(mon);
-    return '<section class="week-sec" aria-label="Veckan"><div class="sec-head"><div><h2>' + label + '</h2><div class="sub">' + weekRange(mon, weekend ? 7 : 5) + " · v.\u00a0" + isoWeek(mon) + " · schemavecka " + (rotWeek(mon) + 1) + "</div></div>" +
+    return '<section class="week-sec" aria-label="Veckan"><div class="sec-head"><div><h2>' + label + '</h2><div class="sub">' + weekRange(mon, weekend ? 7 : 5) + " · v.\u00a0" + isoWeek(mon) + " · schemavecka\u00a0" + (rotWeek(mon) + 1) + "</div></div>" +
       '<div class="stepper">' + todayBtn(act + "0", offset !== 0) +
       (act === "week" ? "" : '<button class="icon-btn" data-act="' + act + '" data-d="-1" aria-label="Föregående vecka">' + ICON.left + '</button><button class="icon-btn" data-act="' + act + '" data-d="1" aria-label="Nästa vecka">' + ICON.right + "</button>") + "</div></div>" +
       '<ul class="week" data-slide>' + rows + "</ul>" +
