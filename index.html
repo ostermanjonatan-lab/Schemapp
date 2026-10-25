@@ -1341,25 +1341,48 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function glanceActive(me) { return !!(coverScreen() && me && !state.picking); }
   // Week card for the cover screen: this week only, just day and time, large.
   function coverWeek(me) {
-    var t = today(), mon = mondayOf(t), weekend = hasWeekend(), rows = "";
+    var t = today(), mon = addDays(mondayOf(t), cover.week * 7), weekend = hasWeekend(), rows = "";
     for (var i = 0; i < 7; i++) {
       var d = addDays(mon, i), s = shiftOn(me, d), isT = dayNum(d) === dayNum(t);
       if (i >= 5 && !weekend && s.kind === "off") continue;
       var txt = s.kind === "work" ? rangeText(s) : s.kind === "note" ? esc(s.label) : s.closed ? esc(s.closed) : "Ledig";
       rows += '<li class="' + (isT ? "is-today" : "") + (s.kind === "work" ? "" : " off") + '"><span class="cw-d">' + DAYS_SHORT[i] + '</span><span class="cw-t">' + txt + "</span></li>";
     }
-    return '<div class="cw-head"><span class="cw-h">Den här veckan</span><span class="cw-s">v.\u00a0' + isoWeek(mon) + '</span></div><ul class="cw">' + rows + "</ul>";
+    var label = cover.week === 0 ? "Den här veckan" : cover.week === 1 ? "Nästa vecka" : cover.week === -1 ? "Förra veckan" : "Vecka " + isoWeek(mon);
+    return '<div data-cs1><div class="cw-head"><span class="cw-h">' + label + '</span><span class="cw-s">v.\u00a0' + isoWeek(mon) + '</span></div><ul class="cw">' + rows + "</ul></div>";
   }
   // Department card for the cover screen: who works when today.
   function coverTeam(me) {
-    var t = today(), fp = favPeople(me);
-    var head = '<div class="cw-head"><span class="cw-h">Avdelningen idag</span></div>';
-    if (!fp.length) return head + '<p class="cw-empty">Välj avdelningskollegor under Inställningar.</p>';
-    return head + '<ul class="cw team">' + [me].concat(fp).map(function (p) {
+    var t = addDays(today(), cover.team), fp = favPeople(me);
+    var head = '<div class="cw-head"><span class="cw-h">' + coverWhen(cover.team, t) + '</span></div>';
+    if (!fp.length) return '<div class="cw-head"><span class="cw-h">Avdelningen idag</span></div><p class="cw-empty">Välj avdelningskollegor under Inställningar.</p>';
+    return '<div data-cs2>' + head + '<ul class="cw team">' + [me].concat(fp).map(function (p) {
       var s = shiftOn(p, t), isMe = p.name === me.name;
       var txt = s.kind === "work" ? rangeText(s) : s.kind === "note" ? esc(s.label) : s.closed ? esc(s.closed) : "Ledig";
       return '<li class="' + (isMe ? "me" : "") + (s.kind === "work" ? "" : " off") + '"><span class="cw-n">' + (isMe ? "Du" : esc(p.name)) + '</span><span class="cw-t">' + txt + "</span></li>";
-    }).join("") + "</ul>";
+    }).join("") + "</ul></div>";
+  }
+  // Sideways on the cover screen: the first and last card change day, the middle one week.
+  // Days nobody works are skipped. Coming back to the cover screen starts from today again.
+  var cover = { day: 0, week: 0, team: 0 };
+  function coverWhen(off, d) { return off === 0 ? "Avdelningen idag" : off === 1 ? "Imorgon" : off === -1 ? "Igår" : DAYS[dow(d)] + " " + shortDate(d); }
+  function coverDay(me) {
+    if (cover.day === 0) return todayCard(me, true);
+    var d = addDays(today(), cover.day), sh = shiftOn(me, d), info = dayInfo(d);
+    var out = '<div class="eyebrow">' + (cover.day === 1 ? "Imorgon · " : cover.day === -1 ? "Igår · " : "") + DAYS[dow(d)] + " " + shortDate(d) + (info ? " · " + esc(info.name) : "") + "</div>";
+    if (sh.kind === "work") out += '<div class="big-sub">' + sh.ranges.map(function (r) { return '<div class="big"><span class="t">' + hhmm(r.s) + '</span> <span class="sep">–</span> <span class="t">' + hhmm(r.e) + "</span></div>"; }).join("") + "</div>";
+    else out += '<div class="big off">' + (sh.kind === "note" ? esc(sh.label) : sh.closed ? esc(sh.closed) : "Ledig") + "</div>";
+    if (sh.kind === "work") out += '<div class="row"><span class="hint mono">' + hours(workMinutes(sh)) + "</span></div>";
+    return out;
+  }
+  function stepCover(kind, dir) {
+    if (kind === "cweek") cover.week += dir;
+    else {
+      var k = kind === "cday" ? "day" : "team", next = ocDayFrom(cover[k] + dir, dir);
+      if (next == null) return;
+      cover[k] = next;
+    }
+    slideSel = kind === "cday" ? "[data-cs0]" : kind === "cweek" ? "[data-cs1]" : "[data-cs2]"; slideDir = dir; render(); buzz();
   }
 
   // The cover screen: three cards to scroll between, no tabs.
@@ -1367,7 +1390,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function renderGlance(me) {
     var dots = [0, 1, 2].map(function (i) { return '<span class="' + (i === deckPage ? "on" : "") + '"></span>'; }).join("");
     return '<div class="deck" id="deck">' +
-      '<section class="page glance" aria-label="Idag"><div class="today">' + todayCard(me, true) + "</div></section>" +
+      '<section class="page glance" aria-label="Idag"><div class="today" data-cs0>' + coverDay(me) + "</div></section>" +
       '<section class="page" aria-label="Veckan"><div class="pcard cover-card">' + coverWeek(me) + "</div></section>" +
       '<section class="page" aria-label="Avdelningen idag"><div class="pcard cover-card">' + coverTeam(me) + "</div></section>" +
       '</div><div class="deck-dots" aria-hidden="true">' + dots + "</div>";
@@ -2350,6 +2373,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // once the movement is clearly sideways the page stops scrolling up and down.
   var swipe = null;
   function swipeEls(kind) {
+    if (kind === "cday" || kind === "cweek" || kind === "cteam") return Array.prototype.slice.call(app.querySelectorAll(kind === "cday" ? "[data-cs0]" : kind === "cweek" ? "[data-cs1]" : "[data-cs2]"));
     if (kind === "oc") return Array.prototype.slice.call(app.querySelectorAll(".oc-card [data-ocslide]"));
     if (kind === "fav") return Array.prototype.slice.call(app.querySelectorAll(".fav-sec [data-favslide]"));
     var scope = state.person ? app.querySelector(".sheet") : app.querySelector("main") || app.querySelector("#deck");
@@ -2366,8 +2390,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   app.addEventListener("touchstart", function (e) {
     swipe = null;
     if (e.touches.length !== 1 || state.edit || state.picking || closing) return;
-    // No week swiping on the cover screen.
-    if (glanceActive(state.profile && personByName(state.profile))) return;
+    if (glanceActive(state.profile && personByName(state.profile))) {
+      var pg = e.target.closest(".page"), pages = pg ? Array.prototype.slice.call(app.querySelectorAll("#deck .page")) : [];
+      var ck = ["cday", "cweek", "cteam"][pages.indexOf(pg)];
+      if (!ck || (ck === "cteam" && !app.querySelector("[data-cs2]"))) return;
+      var t0 = e.touches[0]; swipe = { x: t0.clientX, y: t0.clientY, t: Date.now(), axis: null, dx: 0, els: [], kind: ck };
+      return;
+    }
     if (state.person ? !e.target.closest(".sheet") : state.view !== "home") return;
     if (e.target.closest("input, select, nav")) return;
     var sc = e.target.closest(".fav-scroll");
@@ -2393,7 +2422,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (!reduceMotion) swipeMove(swipe.els, dx, 1 - Math.min(0.5, Math.abs(dx) / 700));
   }, { passive: false });
   // The arrows move the week out the same way a swipe does.
-  function stepFor(kind, dir) { if (kind === "oc") stepOc(dir); else if (kind === "fav") stepFav(dir); else if (state.person) stepPersonWeek(dir); else stepWeek(dir); }
+  function stepFor(kind, dir) { if (/^c(day|week|team)$/.test(kind)) stepCover(kind, dir); else if (kind === "oc") stepOc(dir); else if (kind === "fav") stepFav(dir); else if (state.person) stepPersonWeek(dir); else stepWeek(dir); }
   function slideWeek(dir, kind) {
     var step = function () { stepFor(kind, dir); };
     if (kind === "oc" && ocDayFrom(state.ocOffset + dir, dir) == null || kind === "fav" && ocDayFrom(state.favOffset + dir, dir) == null) return;
@@ -2408,7 +2437,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var fast = Math.abs(sw.dx) > 40 && Math.abs(sw.dx) / Math.max(1, Date.now() - sw.t) > 0.4;
     if (Math.abs(sw.dx) < w * 0.25 && !fast) { swipeMove(sw.els, 0, null, "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.22s"); return; }
     var dir = sw.dx < 0 ? 1 : -1;
-    if (sw.kind === "oc" && ocDayFrom(state.ocOffset + dir, dir) == null || sw.kind === "fav" && ocDayFrom(state.favOffset + dir, dir) == null) { swipeMove(sw.els, 0, null, "transform 0.22s"); return; }
+    if (sw.kind === "oc" && ocDayFrom(state.ocOffset + dir, dir) == null || sw.kind === "fav" && ocDayFrom(state.favOffset + dir, dir) == null ||
+        sw.kind === "cday" && ocDayFrom(cover.day + dir, dir) == null || sw.kind === "cteam" && ocDayFrom(cover.team + dir, dir) == null) { swipeMove(sw.els, 0, null, "transform 0.22s"); return; }
     if (reduceMotion) { stepFor(sw.kind, dir); return; }
     // Finish the movement out of view, then bring the new week in from the other side.
     swipeMove(sw.els, -dir * w, 0, "transform 0.15s ease-in, opacity 0.15s ease-in");
@@ -2563,7 +2593,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     clearTimeout(resizeT);
     resizeT = setTimeout(function () {
       var c = coverScreen();
-      if (c !== wasCover) { wasCover = c; render(); }
+      if (c !== wasCover) { wasCover = c; if (c) cover = { day: 0, week: 0, team: 0 }; render(); }
     }, 150);
   });
 
