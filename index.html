@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#331b3f">
+<meta name="theme-color" content="#eef3ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#170d1c" media="(prefers-color-scheme: dark)">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -546,8 +547,19 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function applyTheme() {
     var t = themePref() === "auto" ? viewerTheme : themePref();
     appliedTheme = t || null;
+    syncBars(t);
     if (root.getAttribute("data-theme") === appliedTheme) return;
     if (t) root.setAttribute("data-theme", t); else root.removeAttribute("data-theme");
+  }
+  // The phone's status and navigation bars take the page background (GitHub version, added to the home screen).
+  function syncBars(t) {
+    var metas = document.querySelectorAll('meta[name="theme-color"]');
+    if (!metas.length) return;
+    var pref = themePref();
+    metas.forEach(function (m) {
+      var dark = pref === "auto" ? /dark/.test(m.getAttribute("media") || "") || t === "dark" : pref === "dark";
+      m.setAttribute("content", dark ? "#170d1c" : "#eef3ef");
+    });
   }
   if (window.MutationObserver) {
     new MutationObserver(function () {
