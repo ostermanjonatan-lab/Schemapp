@@ -231,7 +231,28 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .seg-ctl .theme-btn { height: auto; min-width: 84px; padding: 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: var(--font-body); font-size: var(--fs-xs); }
 .theme-btn svg { width: 22px; height: 22px; stroke: currentColor; }
 .seg-ctl button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.drop { position: relative; border: 1.5px dashed var(--line); border-radius: 12px; padding: 18px 14px; text-align: center; color: var(--muted); font-size: var(--fs-sm); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.drop { position: relative; align-self: flex-start; color: var(--muted); font-size: var(--fs-sm); display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.drop .drag { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .drop { align-self: stretch; border: 1.5px dashed var(--line); border-radius: 12px; padding: 14px; }
+  .drop .drag { display: inline; }
+}
+.formats { margin: 0; padding-left: 1.1em; font-size: var(--fs-sm); color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+.link-btn { align-self: flex-start; background: none; border: 0; padding: 4px 0; color: var(--ink); font: inherit; font-size: var(--fs-sm); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.msg .file { display: block; margin-top: 2px; font-size: var(--fs-xs); opacity: 0.85; overflow-wrap: anywhere; }
+.msg .link-btn { color: inherit; padding: 0; margin-left: 4px; }
+.seg-ctl.seg-join, .settings.sub .seg-ctl.seg-join { gap: 0; flex-wrap: nowrap; align-self: flex-start; }
+.seg-ctl.seg-join button, .settings.sub .seg-ctl.seg-join button { height: 40px; min-width: 48px; font-size: var(--fs-sm); border-radius: 0; margin-left: -1px; }
+.seg-ctl.seg-join button:first-child, .settings.sub .seg-ctl.seg-join button:first-child { border-radius: 10px 0 0 10px; margin-left: 0; }
+.seg-ctl.seg-join button:last-child, .settings.sub .seg-ctl.seg-join button:last-child { border-radius: 0 10px 10px 0; }
+.seg-ctl.seg-join button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); position: relative; z-index: 1; }
+.seg-ctl.seg-join button[aria-pressed="true"]:active { background: var(--accent-soft); }
+.pend-week { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.pend-week .group-label { margin: 0; }
+.pend-week .stepper { display: flex; gap: 4px; }
+.favs.preview td { font-size: var(--fs-xs); }
+.favs.preview td.off { color: var(--muted); }
+.favs.preview td.note { overflow-wrap: anywhere; hyphens: auto; }
 .drop.over { border-color: var(--accent); background: var(--accent-soft); }
 .drop input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; z-index: 1; }
 .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -600,7 +621,6 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   var DAYS = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag", "Söndag"];
   var DAYS_SHORT = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
   var MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
-  var MONTHS_LONG = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"];
 
   function today() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
   function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
@@ -1065,12 +1085,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
 
   function renderPicker(me) {
     var names = DATA.people.map(function (p) { return p.name; }).sort(function (a, b) { return a.localeCompare(b, "sv"); });
-    return '<section class="picker view">' + exampleNote() +
+    var saved = state.msg && state.msg.ok ? '<div class="msg ok" role="status">' + esc(state.msg.text) + '<button class="link-btn" data-act="sub" data-s="file">Byt fil</button></div>' : "";
+    return '<section class="picker view">' + exampleNote() + saved +
       "<h1>Vem är du?</h1><p>Valet sparas på den här telefonen.</p>" +
       '<input id="pick-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.pickQ) + '" autocomplete="off" enterkeyhint="go" aria-label="Sök namn">' +
       '<ul class="plist">' + names.map(function (n) {
         var cur = me && me.name === n;
-        return '<li data-q="' + esc(norm(n)) + '"><button class="prow" data-act="choose" data-name="' + esc(n) + '"' + (cur ? ' aria-current="true"' : "") + '><span class="initials">' + initials(n) + '</span><span class="pn">' + esc(n) + "</span>" + (cur ? '<span class="cur-l">Vald</span>' : "") + "</button></li>";
+        return '<li data-q="' + esc(norm(n)) + '"><button class="prow" data-act="choose" data-name="' + esc(n) + '"' + (cur ? ' aria-current="true"' : "") + '><span class="pn">' + esc(n) + "</span>" + (cur ? '<span class="cur-l">Vald</span>' : "") + "</button></li>";
       }).join("") + "</ul>" +
       '<p class="hint" id="pick-none" hidden>Inget namn matchar.</p>' +
       (me ? '<div class="btn-row"><button class="btn" data-act="unpick">Avbryt</button></div>' : "") +
@@ -1168,7 +1189,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
 
   function todayCard(me, compactView) {
     var t = today(), sh = shiftOn(me, t), st = statusFor(me, t), info = sh.closed ? null : dayInfo(t);
-    var out = '<div class="eyebrow">Idag · ' + DAYS[dow(t)] + " " + (compactView ? shortDate(t) : t.getDate() + " " + MONTHS_LONG[t.getMonth()]) + (info ? ' · <span class="dayinfo ' + info.type + '">' + esc(info.name) + "</span>" : "") + "</div>";
+    var out = '<div class="eyebrow">Idag · ' + DAYS[dow(t)] + " " + shortDate(t) + (info ? ' · <span class="dayinfo ' + info.type + '">' + esc(info.name) + "</span>" : "") + "</div>";
     if (sh.kind === "work") out += '<div class="big-sub">' + sh.ranges.map(function (r) { return '<div class="big"><span class="t">' + hhmm(r.s) + '</span> <span class="sep">–</span> <span class="t">' + hhmm(r.e) + "</span></div>"; }).join("") + "</div>";
     else if (sh.kind === "note") out += '<div class="big off">' + esc(sh.label) + "</div>";
     else out += '<div class="big off">' + (sh.closed ? esc(sh.closed) : "Ledig") + "</div>";
@@ -1524,7 +1545,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   // Settings: everyday choices on the first page, schedule and rules as rows that open their own page.
-  var SUBS = [["file", "Schemafil"], ["week", "Schemavecka"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["time", "Rast"], ["help", "Vilka Excel-filer fungerar?"]];
+  var SUBS = [["file", "Schemafil"], ["week", "Schemavecka"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["time", "Rast"], ["help", "Filer som fungerar"]];
   function settingsMsg() { return state.msg ? '<div class="msg ' + (state.msg.ok ? "ok" : "err") + '" role="status">' + esc(state.msg.text) + "</div>" : ""; }
   function renderSettings(me) {
     if (state.sub) return renderSub(me, state.sub);
@@ -1560,38 +1581,41 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function renderSub(me, sub) {
     var t = today(), curW = rotWeek(t), title = "";
     SUBS.forEach(function (x) { if (x[0] === sub) title = x[1]; });
-    var out = '<div class="view settings sub">' + (DATA.people.length || sub !== "file" ? '<button class="back-btn" data-act="subback">' + ICON.left + "<span>Inställningar</span></button>" : "") +
-      '<div class="sec-head"><h2>' + title + "</h2></div>" + settingsMsg();
+    var out = '<div class="view settings sub">' + (DATA.people.length || sub !== "file" ? '<button class="back-btn" data-act="subback">' + ICON.left + "<span>" + (DATA.people.length ? "Inställningar" : "Tillbaka") + "</span></button>" : "") +
+      '<div class="sec-head"><h2>' + (sub === "file" && !DATA.people.length ? "Ladda upp schemat" : title) + "</h2></div>" + settingsMsg();
 
     if (sub === "file") {
       out += '<section class="panel">';
-      if (!DATA.people.length) out += "<p>Ladda upp schemat som Excel-fil för att börja.</p>";
-      else out += '<dl class="kv"><dt>Källa</dt><dd>' + esc(DATA.source || "Okänd") + (DATA.example ? " (exempel)" : "") + "</dd>" +
-        "<dt>Uppdaterad</dt><dd>" + esc(fmtStamp(DATA.updated)) + "</dd><dt>Personer</dt><dd>" + DATA.people.length + "</dd><dt>Rullande</dt><dd>" + DATA.weeks + " veckor</dd></dl>";
-      if (usingLocal && EMBEDDED.people.length) out += '<p class="hint">Det här schemat är bara sparat på den här enheten.</p><div class="btn-row"><button class="btn" data-act="droplocal">Använd det delade schemat</button></div>';
       if (state.pending) {
-        var p = state.pending;
-        var info = state.pendingInfo || {}, layout = { grid: "dagarna som kolumner", rows: "dagarna som rader", list: "en rad per pass" }[info.kind];
-        out += '<div class="msg ok">Hittade ' + p.people.length + (p.people.length === 1 ? " person och " : " personer och ") + p.weeks + (p.weeks === 1 ? " vecka i " : " veckor i ") + esc(p.source) + (layout ? ", med " + layout : "") + ".</div>" +
-          '<div class="preview-names">' + p.people.map(function (x) { return '<span class="chip">' + esc(x.name) + "</span>"; }).join("") + "</div>" +
-          previewHtml(p) +
+        var p = state.pending, info = state.pendingInfo || {}, cw = rotOf(p, today());
+        var from = { file: "Gissat från datumen i filen.", name: "Gissat från filnamnet." }[info.weekFrom] || "";
+        out += '<div class="msg ok">Hittade ' + p.people.length + (p.people.length === 1 ? " person och " : " personer och ") + p.weeks + (p.weeks === 1 ? " vecka." : " veckor.") + '<span class="file">' + esc(p.source) + "</span></div>";
+        if (p.weeks > 1) {
+          out += '<h3 class="pend-h">Vilken schemavecka är det nu?</h3><p class="hint">Vecka ' + isoWeek(today()) + ", " + weekRange(mondayOf(today())) + "." + (from ? " " + from : "") + "</p>" +
+            '<div class="seg-ctl seg-join" role="group" aria-label="Schemavecka nu">';
+          for (var w = 0; w < p.weeks; w++) out += '<button data-act="pendweek" data-w="' + w + '" aria-pressed="' + (w === cw) + '">' + (w + 1) + "</button>";
+          out += "</div>";
+        }
+        out += previewHtml(p, cw) +
           (info.notes && info.notes.length ? '<p class="hint">Text som inte är tider visas som den står: ' + info.notes.slice(0, 6).map(esc).join(", ") + (info.notes.length > 6 ? " med flera" : "") + ".</p>" : "") +
-          '<h3 class="pend-h">Vilken schemavecka är det nu?</h3><p class="hint">Vecka ' + isoWeek(today()) + " (" + weekRange(mondayOf(today())) + ").</p>" +
-          '<div class="seg-ctl" role="group" aria-label="Schemavecka nu">' + (function () {
-            var cw = rotOf(p, today()), b = "";
-            for (var w = 0; w < p.weeks; w++) b += '<button data-act="pendweek" data-w="' + w + '" aria-pressed="' + (w === cw) + '">' + (w + 1) + "</button>";
-            return b;
-          })() + "</div>" +
           '<div class="btn-row"><button class="btn primary" data-act="save"' + (state.saving ? " disabled" : "") + ">" + (state.saving ? "Sparar..." : "Spara schemat") + '</button><button class="btn" data-act="cancel">Avbryt</button></div>';
       } else {
-        out += '<div class="drop" id="drop"><span>Excel-fil (.xlsx) eller CSV</span><span class="btn primary" aria-hidden="true">Ladda upp schema</span>' +
+        if (!DATA.people.length) out += "<p>" + (window.claude ? "Alla som öppnar appen ser schemat du laddar upp." : "Schemat sparas bara på den här enheten.") + "</p>";
+        else out += '<dl class="kv"><dt>Källa</dt><dd>' + esc(DATA.source || "Okänd") + (DATA.example ? " (exempel)" : "") + "</dd>" +
+          "<dt>Uppdaterad</dt><dd>" + esc(fmtStamp(DATA.updated)) + "</dd><dt>Personer</dt><dd>" + DATA.people.length + "</dd><dt>Rullande</dt><dd>" + DATA.weeks + " veckor</dd></dl>";
+        if (usingLocal && EMBEDDED.people.length) out += '<p class="hint">Det här schemat är bara sparat på den här enheten.</p><div class="btn-row"><button class="btn" data-act="droplocal">Använd det delade schemat</button></div>';
+        out += '<div class="drop" id="drop"><span class="btn primary" aria-hidden="true">Ladda upp schema</span><span>Excel eller CSV.<span class="drag"> Du kan också dra filen hit.</span></span>' +
           '<input id="file-input" type="file" aria-label="Ladda upp schema" accept=".xlsx,.xls,.xlsm,.ods,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"></div>' +
-          '<div class="btn-row"><button class="btn" data-act="sub" data-s="help">Vilka Excel-filer fungerar?</button></div>';
+          '<h3 class="pend-h">Filer som fungerar</h3><ul class="formats">' +
+          "<li>En rad per person, veckodagarna som kolumner</li>" +
+          "<li>En kolumn per person, veckodagarna som rader</li>" +
+          "<li>En rad per pass med namn, dag och tider</li></ul>" +
+          '<button class="link-btn" data-act="sub" data-s="help">Mer om tider och koder</button>';
       }
       out += "</section>";
     } else if (sub === "week") {
       out += '<section class="panel"><p>Vecka ' + isoWeek(t) + " (" + weekRange(mondayOf(t)) + ") är schemavecka:</p>" +
-        '<div class="seg-ctl" role="group" aria-label="Schemavecka nu">';
+        '<div class="seg-ctl seg-join" role="group" aria-label="Schemavecka nu">';
       for (var w = 0; w < DATA.weeks; w++) out += '<button data-act="setweek" data-w="' + w + '" aria-pressed="' + (w === curW) + '">' + (w + 1) + "</button>";
       out += "</div></section>";
     } else if (sub === "plan") {
@@ -1630,24 +1654,31 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     return out + "</div>";
   }
 
-  // Week 1 for the first people in an uploaded file, to check it was read right before saving.
-  function previewHtml(data) {
-    var people = data.people.slice(0, 4), days = [];
-    for (var d = 0; d < 7; d++) if (d < 5 || people.some(function (p) { return parseShift(p.shifts[d]).kind !== "off"; })) days.push(d);
+  // One week of the uploaded file, to check it was read right before saving. Starts on this week.
+  function shortTime(min) { min = ((min % 1440) + 1440) % 1440; var h = Math.floor(min / 60), m = min % 60; return h + (m ? ":" + pad(m) : ""); }
+  var PREVIEW_ROWS = 5;
+  function previewHtml(data, cw) {
+    var wk = state.pendView == null ? cw : ((state.pendView % data.weeks) + data.weeks) % data.weeks;
+    var all = state.pendAll || data.people.length <= PREVIEW_ROWS + 1;
+    var people = all ? data.people : data.people.slice(0, PREVIEW_ROWS), days = [];
+    for (var d = 0; d < 7; d++) if (d < 5 || people.some(function (p) { return parseShift(p.shifts[wk * 7 + d]).kind !== "off"; })) days.push(d);
     var head = '<tr><th></th>' + days.map(function (d) { return "<th><b>" + DAYS_SHORT[d] + "</b></th>"; }).join("") + "</tr>";
     var body = people.map(function (p) {
       return "<tr><th>" + esc(p.name) + "</th>" + days.map(function (d) {
-        var s = parseShift(p.shifts[d]);
-        if (s.kind === "work") return "<td><span>" + hhmm(s.ranges[0].s) + "</span><span>" + hhmm(s.ranges[s.ranges.length - 1].e) + "</span></td>";
-        if (s.kind === "note") return '<td class="note">' + esc(s.label.length > 6 ? s.label.slice(0, 5) + "." : s.label) + "</td>";
-        return '<td class="off">–</td>';
+        var s = parseShift(p.shifts[wk * 7 + d]);
+        if (s.kind === "work") return "<td><span>" + shortTime(s.ranges[0].s) + "</span><span>" + shortTime(s.ranges[s.ranges.length - 1].e) + "</span></td>";
+        if (s.kind === "note") return '<td class="note" lang="sv">' + esc(s.label) + "</td>";
+        return '<td class="off">Ledig</td>';
       }).join("") + "</tr>";
     }).join("");
-    return '<div class="group-label">Schemavecka 1, de första i filen</div><div class="fav-scroll"><table class="favs"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div>";
+    var label = "Schemavecka " + (wk + 1) + " av " + data.weeks + (wk === cw && data.weeks > 1 ? ", den här veckan" : "");
+    var nav = data.weeks > 1 ? '<div class="stepper"><button class="icon-btn" data-act="pendview" data-w="' + (wk - 1) + '" aria-label="Föregående schemavecka">' + ICON.left + '</button><button class="icon-btn" data-act="pendview" data-w="' + (wk + 1) + '" aria-label="Nästa schemavecka">' + ICON.right + "</button></div>" : "";
+    return '<div class="pend-week"><div class="group-label">' + label + "</div>" + nav + '</div><div class="fav-scroll"><table class="favs preview"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div>" +
+      (all ? "" : '<button class="link-btn" data-act="pendall">Visa alla ' + data.people.length + " personer</button>");
   }
 
-  function fmtStamp(iso) { var d = new Date(iso); if (isNaN(d)) return "–"; return d.getDate() + " " + MONTHS_LONG[d.getMonth()] + " " + d.getFullYear() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
-  function fmtDate(s) { var d = parseYmd(s); return d.getDate() + " " + MONTHS_LONG[d.getMonth()] + " " + d.getFullYear(); }
+  function fmtStamp(iso) { var d = new Date(iso); if (isNaN(d)) return "–"; return shortDate(d) + " " + d.getFullYear() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function fmtDate(s) { var d = parseYmd(s); return shortDate(d) + " " + d.getFullYear(); }
 
   // ---------- Excel import ----------
   // Three layouts are recognised, and the one that finds the most shifts wins:
@@ -2226,13 +2257,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     } else {
       pick = results.slice().sort(function (a, b) { return b.score - a.score; })[0];
     }
-    var anchor = pick.anchor || dateFromName(filename);
+    var anchor = pick.anchor || dateFromName(filename), weekFrom = pick.anchor ? "file" : anchor ? "name" : null;
     if (!anchor) {
       // Keep today's rotation week if the file says nothing about dates.
       var cw = DATA.weeks === pick.weeks ? rotWeek(today()) : 0;
       anchor = ymd(addDays(mondayOf(today()), -cw * 7));
     }
-    return { example: false, source: filename, updated: new Date().toISOString(), weeks: pick.weeks, anchor: anchor, breakMin: breakMin(), minStaff: DATA.minStaff,  people: pick.people, depts: pick.depts, kind: pick.kind };
+    return { example: false, source: filename, updated: new Date().toISOString(), weeks: pick.weeks, anchor: anchor, breakMin: breakMin(), minStaff: DATA.minStaff,  people: pick.people, depts: pick.depts, kind: pick.kind, weekFrom: weekFrom };
   }
   function joinWeeks(results) {
     var names = [], map = {}, xmap = {};
@@ -2276,7 +2307,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     xlsxWait.push(cb);
   }
   function handleFile(file) {
-    state.msg = null; state.pending = null;
+    state.msg = null; state.pending = null; state.pendView = null; state.pendAll = false;
     if (!window.XLSX) {
       state.msg = { ok: true, text: "Läser filen..." }; render();
       loadXlsx(function () { if (window.XLSX) handleFile(file); else { state.msg = { ok: false, text: "Excel-läsaren kunde inte laddas. Kontrollera internetanslutningen och försök igen." }; render(); } });
@@ -2295,8 +2326,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         var parsed = parseWorkbook(wb, file.name);
         if (!parsed) state.msg = { ok: false, text: "Hittade inget schema i " + file.name + ". Filen behöver en rubrikrad med veckodagar (Mån, Tis, Ons ...) och namnen i en egen kolumn. Se exemplet längre ner." };
         else {
-          state.pendingInfo = { kind: parsed.kind, notes: unreadNotes(parsed) };
-          delete parsed.kind;
+          state.pendingInfo = { kind: parsed.kind, weekFrom: parsed.weekFrom, notes: unreadNotes(parsed) };
+          delete parsed.kind; delete parsed.weekFrom;
           state.pending = parsed;
         }
       } catch (e) {
@@ -2323,13 +2354,17 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     state.pending = null; state.saving = false;
     state.msg = { ok: true, text: why };
     render();
+    if (state.view === "home") window.scrollTo(0, 0);
   }
 
   function save(data, okText) {
+    // The first schedule: go to choosing your name and confirm there, with a way back to change the file.
+    var first = !DATA.people.length, count = data.people.length + (data.people.length === 1 ? " person." : " personer.");
+    var back = first ? { view: "home", sub: null } : { view: "settings", sub: state.sub };
     state.saving = true; render();
     getArtifact().then(function (art) {
-      if (!art) { saveLocal(data, window.claude ? "Schemat är sparat på den här enheten. Öppna appen via den delade länken som ägare för att spara det åt alla." : "Schemat är sparat på den här telefonen."); return; }
-      ssSet("skift.flash", JSON.stringify({ view: "settings", sub: state.sub, msg: { ok: true, text: okText } }));
+      if (!art) { saveLocal(data, window.claude ? "Schemat är sparat på den här enheten. Öppna appen via den delade länken som ägare för att spara det åt alla." : "Schemat är sparat på den här enheten. " + count); return; }
+      ssSet("skift.flash", JSON.stringify({ view: back.view, sub: back.sub, msg: { ok: true, text: first ? "Schemat är sparat och visas för alla som öppnar appen. " + count : okText } }));
       lsSet("skift.local", null);
       return art.publish(buildDocument(data)).then(function () {
         // The page reloads to the new version on its own.
@@ -2508,7 +2543,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var b = e.target.closest("[data-act]"); if (!b) return;
     var act = b.getAttribute("data-act");
     if (act === "fav") { toggleFav(b.getAttribute("data-name")); buzz(); render(); return; }
-    if (act === "sub") { state.view = "settings"; state.sub = b.getAttribute("data-s"); state.picking = false; lsSet("skift.view", "settings"); render(); window.scrollTo(0, 0); return; }
+    if (act === "sub") { state.view = "settings"; state.sub = b.getAttribute("data-s"); state.picking = false; state.msg = null; lsSet("skift.view", "settings"); render(); window.scrollTo(0, 0); return; }
     if (act === "subback") { state.sub = null; state.msg = null; render(); window.scrollTo(0, 0); return; }
     if (act === "gofavs") { state.view = "settings"; lsSet("skift.view", "settings"); render(); var fpn = document.getElementById("fav-panel"); if (fpn) fpn.scrollIntoView(); return; }
     if (act === "daymode") { state.dayMode = b.getAttribute("data-m"); lsSet("skift.daymode", state.dayMode === "dept" ? "dept" : null); render(); return; }
@@ -2516,7 +2551,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (act === "go") { state.view = b.getAttribute("data-view"); state.picking = false; state.sub = null; if (state.view !== "settings") state.msg = null; lsSet("skift.view", state.view); render(); window.scrollTo(0, 0); }
     else if (act === "pick") { state.picking = true; if (state.view === "settings") state.view = "home"; render(); window.scrollTo(0, 0); }
     else if (act === "unpick") { state.picking = false; render(); }
-    else if (act === "choose") { state.profile = b.getAttribute("data-name"); state.picking = false; state.pickQ = ""; lsSet("skift.profile", state.profile); buzz(); render(); window.scrollTo(0, 0); }
+    else if (act === "choose") { state.profile = b.getAttribute("data-name"); state.picking = false; state.msg = null; state.pickQ = ""; lsSet("skift.profile", state.profile); buzz(); render(); window.scrollTo(0, 0); }
     else if (act === "week") { slideWeek(+b.getAttribute("data-d")); }
     else if (act === "favweek") { slideWeek(+b.getAttribute("data-d"), "fav"); }
     else if (act === "fav0") { var f0 = ocDayFrom(0, 1); if (f0 != null && state.favOffset !== f0) { slideSel = "[data-favslide]"; slideDir = f0 < state.favOffset ? -1 : 1; state.favOffset = f0; render(); buzz(); } }
@@ -2525,7 +2560,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "week0") { var w0 = state.weekOffset; if (w0) stepWeek(-w0); }
     else if (act === "cancel") { state.pending = null; state.msg = null; render(); }
     else if (act === "save" && state.pending && !state.saving) { save(state.pending, "Schemat är sparat och visas nu för alla som öppnar appen."); }
-    else if (act === "pendweek" && state.pending) { state.pending.anchor = ymd(addDays(mondayOf(today()), -(+b.getAttribute("data-w")) * 7)); render(); }
+    else if (act === "pendweek" && state.pending) { state.pending.anchor = ymd(addDays(mondayOf(today()), -(+b.getAttribute("data-w")) * 7)); state.pendView = null; render(); }
+    else if (act === "pendview" && state.pending) { state.pendView = +b.getAttribute("data-w"); render(); }
+    else if (act === "pendall" && state.pending) { state.pendAll = true; render(); }
     else if (act === "setweek" && !state.saving) {
       var w = +b.getAttribute("data-w");
       if (w === rotWeek(today())) return;
