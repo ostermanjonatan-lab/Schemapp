@@ -2324,7 +2324,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           wb = XLSX.read(str.replace(/^\ufeff/, ""), { type: "string", raw: true });
         } else wb = XLSX.read(bytes, { type: "array", cellDates: true, cellStyles: true });
         var parsed = parseWorkbook(wb, file.name);
-        if (!parsed) state.msg = { ok: false, text: "Hittade inget schema i " + file.name + ". Filen behöver en rubrikrad med veckodagar (Mån, Tis, Ons ...) och namnen i en egen kolumn. Se exemplet längre ner." };
+        if (!parsed) state.msg = { ok: false, text: "Hittade inget schema i " + file.name + ". Filen behöver en rubrikrad med veckodagar (Mån, Tis, Ons ...) och namnen i en egen kolumn. Se listan nedan." };
         else {
           state.pendingInfo = { kind: parsed.kind, weekFrom: parsed.weekFrom, notes: unreadNotes(parsed) };
           delete parsed.kind; delete parsed.weekFrom;
