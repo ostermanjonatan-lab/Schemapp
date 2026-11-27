@@ -371,6 +371,11 @@ a.btn { text-decoration: none; color: var(--ink); }
 .mode-switch .opt.on { background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 2px rgba(23, 13, 28, 0.2); }
 .mode-switch svg { width: 18px; height: 18px; stroke: var(--muted); }
 /* Kollegor: search and sort on one row; slim rows with name and time only, your own row marked. */
+.day-nav { display: flex; align-items: center; gap: 6px; margin-top: calc(var(--space-inner) - var(--space-section)); }
+.day-nav .dn-label { flex: 1; text-align: center; font-weight: 600; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
+.day-nav .dn-arrow { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; background: var(--accent-soft); cursor: pointer; }
+.day-nav .dn-arrow svg { width: 16px; height: 16px; stroke: var(--ink); }
+.day-nav .icon-btn, .day-nav .dn-pad { width: 40px; height: 40px; background: none; flex: none; }
 .tools { display: flex; gap: 8px; align-items: center; }
 .tools .search { flex: 1; min-width: 0; }
 .mini-seg { display: flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--accent-soft); flex: none; height: 48px; }
@@ -580,6 +585,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     view: lsGet("skift.view") || "home",
     peopleMode: lsGet("skift.peoplemode") === "dept" || lsGet("skift.daymode") === "dept" ? "dept" : "all",
     daySort: lsGet("skift.daysort") === "end" ? "end" : "start",
+    peopleOff: 0,
     profile: lsGet("skift.profile"),
     picking: false,
     weekOffset: 0,
@@ -1422,12 +1428,19 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // Kollegor: everyone today. Grouped by where they are in the day (working now, not started,
   // finished, off) and sorted by start or end time, or simply by name. Can be shown per department;
   // a search shows the matches in one list.
+  function stepPeople(n) {
+    var next = ocDayFrom(state.peopleOff + n, n);
+    if (next == null) return;
+    state.peopleOff = next; slideSel = "[data-pslide]"; slideDir = n; render(); buzz();
+  }
   function renderPeople(me) {
-    var t = today(), now = nowMinutes(), depts = deptList(), byDept = depts && state.peopleMode === "dept";
+    // Another day (swipe or the arrows): no "now" there, so everyone working is one group.
+    var off = state.peopleOff, isToday = off === 0, t = addDays(today(), off), now = nowMinutes(), depts = deptList(), byDept = depts && state.peopleMode === "dept";
     var sort = state.daySort === "end" ? "end" : "start", q = norm(state.peopleQ || "").trim(), closed = closedDay(t);
     var all = DATA.people.map(function (p) {
       var s = shiftOn(p, t), st = 3, txt;
-      if (s.kind === "work") {
+      if (s.kind === "work" && !isToday) { st = 0; txt = rangeText(s); }
+      else if (s.kind === "work") {
         var cur = s.ranges.some(function (r) { return now >= r.s && now < r.e; }), next = s.ranges.some(function (r) { return now < r.s; });
         st = cur ? 0 : next ? 1 : 2; txt = rangeText(s);
       } else txt = s.kind === "note" ? esc(s.label) : s.closed ? esc(s.closed) : "Ledig";
@@ -1438,18 +1451,18 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     function timeKey(x) { return x.st === 3 ? 0 : x.st === 2 ? -x.s.ranges[x.s.ranges.length - 1].e : sort === "end" ? x.s.ranges[x.s.ranges.length - 1].e : x.s.ranges[0].s; }
     function cmp(a, b) { return a.st - b.st || timeKey(a) - timeKey(b) || byName(a, b); }
     function row(x) {
-      var isMe = me && me.name === x.p.name, cls = x.st === 0 ? "now" : x.st === 3 ? (x.s.kind === "note" ? "note" : "past") : x.st === 2 ? "past" : "work";
+      var isMe = me && me.name === x.p.name, cls = x.st === 0 ? (isToday ? "now" : "work") : x.st === 3 ? (x.s.kind === "note" ? "note" : "past") : x.st === 2 ? "past" : "work";
       return '<li data-q="' + esc(norm(x.p.name)) + '"' + (isMe ? ' class="me"' : "") + '><button class="prow slim" data-act="person" data-name="' + esc(x.p.name) + '"><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : "") + '</span><span class="pt ' + cls + '">' + x.txt + "</span></button></li>";
     }
     function ul(list) { return '<ul class="plist">' + list.slice().sort(cmp).map(row).join("") + "</ul>"; }
-    var STATES = ["Jobbar nu", "Har inte börjat", "Har slutat", "Lediga och frånvarande"], list;
+    var STATES = [isToday ? "Jobbar nu" : "Jobbar", "Har inte börjat", "Har slutat", "Lediga och frånvarande"], list;
     if (q) list = '<ul class="plist">' + all.slice().sort(byName).map(row).join("") + "</ul>";
     else if (byDept) {
       var groups = deptOrder(me, depts).map(function (i) { return { name: depts[i].name, idx: i, xs: all.filter(function (x) { return deptOf(x.p) === i; }) }; });
       groups.push({ name: "Utan avdelning", xs: all.filter(function (x) { return deptOf(x.p) == null; }) });
       list = groups.filter(function (g) { return g.xs.length; }).map(function (g) {
         var n = g.xs.filter(function (x) { return x.st === 0; }).length;
-        return '<section class="pgroup">' + deptHead(g.name, closed ? g.xs.length + " personer" : n + " av " + g.xs.length + " jobbar nu") + ul(g.xs) + "</section>";
+        return '<section class="pgroup">' + deptHead(g.name, closed ? g.xs.length + " personer" : n + " av " + g.xs.length + (isToday ? " jobbar nu" : " jobbar")) + ul(g.xs) + "</section>";
       }).join("");
     } else if (closed) list = '<ul class="plist">' + all.slice().sort(byName).map(row).join("") + "</ul>";
     else list = STATES.map(function (title, st) {
@@ -1458,11 +1471,14 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }).join("");
 
     return '<div class="view">' + exampleNote() +
-      '<div class="sec-head"><div><h2>Kollegor</h2><div class="sub">' + DAYS[dow(t)] + " " + shortDate(t) + "</div></div>" + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div>" +
+      '<div class="sec-head"><h2>Kollegor</h2>' + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div>" +
+      '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + '</button><span class="dn-pad"></span>' +
+      '<span class="dn-label" data-pslide>' + (off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "") + (off >= -1 && off <= 1 ? DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + "</span>" +
+      todayBtn("people0", !isToday) + '<button class="dn-arrow" data-act="peopleday" data-d="1" aria-label="Nästa dag">' + ICON.right + "</button></div>" +
       '<section class="people-sec"><div class="tools"><input id="people-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.peopleQ) + '" autocomplete="off" aria-label="Sök namn">' +
       '<div class="mini-seg" role="group" aria-label="Sortera på"><button data-act="daysort" data-s="start" aria-pressed="' + (sort === "start") + '" aria-label="Sortera på starttid">Start</button><button data-act="daysort" data-s="end" aria-pressed="' + (sort === "end") + '" aria-label="Sortera på sluttid">Slut</button></div></div>' +
       (closed && !q ? '<p class="hint">' + esc(closed) + ", förskolan är stängd.</p>" : "") +
-      '<div id="people-list">' + list + '</div><p class="hint" id="people-none" hidden>Inget namn matchar.</p></section></div>';
+      '<div id="people-list" data-pslide>' + list + '</div><p class="hint" id="people-none" hidden>Inget namn matchar.</p></section></div>';
   }
 
   function empText(p) {
@@ -2343,6 +2359,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // once the movement is clearly sideways the page stops scrolling up and down.
   var swipe = null;
   function swipeEls(kind) {
+    if (kind === "people") return Array.prototype.slice.call(app.querySelectorAll("[data-pslide]"));
     if (kind === "cday" || kind === "cweek" || kind === "cteam") return Array.prototype.slice.call(app.querySelectorAll(kind === "cday" ? "[data-cs0]" : kind === "cweek" ? "[data-cs1]" : "[data-cs2]"));
     if (kind === "oc") return Array.prototype.slice.call(app.querySelectorAll(".oc-card [data-ocslide]"));
     if (kind === "fav") return Array.prototype.slice.call(app.querySelectorAll(".fav-sec [data-favslide]"));
@@ -2367,14 +2384,14 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       var t0 = e.touches[0]; swipe = { x: t0.clientX, y: t0.clientY, t: Date.now(), axis: null, dx: 0, els: [], kind: ck };
       return;
     }
-    if (state.person ? !e.target.closest(".sheet") : state.view !== "home") return;
+    if (state.person ? !e.target.closest(".sheet") : state.view !== "home" && state.view !== "grid") return;
     if (e.target.closest("input, select, nav")) return;
     var sc = e.target.closest(".fav-scroll");
     if (sc && sc.scrollWidth > sc.clientWidth + 1) return;
     // Each part of Mitt schema swipes on its own: the open/close card by day, the week and the colleagues by week.
     var kind = "week";
     if (!state.person) {
-      kind = e.target.closest(".oc-card") ? "oc" : e.target.closest(".fav-sec") ? "fav" : e.target.closest(".week-sec") ? "week" : null;
+      kind = state.view === "grid" ? (e.target.closest("#people-list, .day-nav") ? "people" : null) : e.target.closest(".oc-card") ? "oc" : e.target.closest(".fav-sec") ? "fav" : e.target.closest(".week-sec") ? "week" : null;
       if (!kind) return;
     }
     var t = e.touches[0]; swipe = { x: t.clientX, y: t.clientY, t: Date.now(), axis: null, dx: 0, els: [], kind: kind };
@@ -2392,10 +2409,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (!reduceMotion) swipeMove(swipe.els, dx, 1 - Math.min(0.5, Math.abs(dx) / 700));
   }, { passive: false });
   // The arrows move the week out the same way a swipe does.
-  function stepFor(kind, dir) { if (/^c(day|week|team)$/.test(kind)) stepCover(kind, dir); else if (kind === "oc") stepOc(dir); else if (kind === "fav") stepFav(dir); else if (state.person) stepPersonWeek(dir); else stepWeek(dir); }
+  function stepFor(kind, dir) { if (/^c(day|week|team)$/.test(kind)) stepCover(kind, dir); else if (kind === "people") stepPeople(dir); else if (kind === "oc") stepOc(dir); else if (kind === "fav") stepFav(dir); else if (state.person) stepPersonWeek(dir); else stepWeek(dir); }
   function slideWeek(dir, kind) {
     var step = function () { stepFor(kind, dir); };
-    if (kind === "oc" && ocDayFrom(state.ocOffset + dir, dir) == null || kind === "fav" && ocDayFrom(state.favOffset + dir, dir) == null) return;
+    if (kind === "people" && ocDayFrom(state.peopleOff + dir, dir) == null || kind === "oc" && ocDayFrom(state.ocOffset + dir, dir) == null || kind === "fav" && ocDayFrom(state.favOffset + dir, dir) == null) return;
     var els = swipeEls(kind);
     if (reduceMotion || !els.length) { step(); return; }
     swipeMove(els, -dir * window.innerWidth * 0.6, 0, "transform 0.15s ease-in, opacity 0.15s ease-in");
@@ -2408,7 +2425,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (Math.abs(sw.dx) < w * 0.25 && !fast) { swipeMove(sw.els, 0, null, "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.22s"); return; }
     var dir = sw.dx < 0 ? 1 : -1;
     if (sw.kind === "oc" && ocDayFrom(state.ocOffset + dir, dir) == null || sw.kind === "fav" && ocDayFrom(state.favOffset + dir, dir) == null ||
-        sw.kind === "cday" && ocDayFrom(cover.day + dir, dir) == null || sw.kind === "cteam" && ocDayFrom(cover.team + dir, dir) == null) { swipeMove(sw.els, 0, null, "transform 0.22s"); return; }
+        sw.kind === "people" && ocDayFrom(state.peopleOff + dir, dir) == null || sw.kind === "cday" && ocDayFrom(cover.day + dir, dir) == null || sw.kind === "cteam" && ocDayFrom(cover.team + dir, dir) == null) { swipeMove(sw.els, 0, null, "transform 0.22s"); return; }
     if (reduceMotion) { stepFor(sw.kind, dir); return; }
     // Finish the movement out of view, then bring the new week in from the other side.
     swipeMove(sw.els, -dir * w, 0, "transform 0.15s ease-in, opacity 0.15s ease-in");
@@ -2490,6 +2507,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "week") { slideWeek(+b.getAttribute("data-d")); }
     else if (act === "favweek") { slideWeek(+b.getAttribute("data-d"), "fav"); }
     else if (act === "fav0") { var f0 = ocDayFrom(0, 1); if (f0 != null && state.favOffset !== f0) { slideSel = "[data-favslide]"; slideDir = f0 < state.favOffset ? -1 : 1; state.favOffset = f0; render(); buzz(); } }
+    else if (act === "peopleday") { slideWeek(+b.getAttribute("data-d"), "people"); }
+    else if (act === "people0") { if (state.peopleOff) { slideSel = "[data-pslide]"; slideDir = state.peopleOff > 0 ? -1 : 1; state.peopleOff = 0; render(); buzz(); } }
     else if (act === "oc0") { var o0 = ocDayFrom(0, 1); if (o0 != null && state.ocOffset !== o0) { slideSel = "[data-ocslide]"; slideDir = o0 < state.ocOffset ? -1 : 1; state.ocOffset = o0; render(); buzz(); } }
     else if (act === "ocday") { slideWeek(+b.getAttribute("data-d"), "oc"); }
     else if (act === "week0") { var w0 = state.weekOffset; if (w0) stepWeek(-w0); }
