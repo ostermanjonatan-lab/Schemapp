@@ -380,6 +380,7 @@ a.btn { text-decoration: none; color: var(--ink); }
 .day-nav .dn-arrow svg { width: 16px; height: 16px; stroke: var(--ink); }
 /* The date has the whole width between the arrows; the button back to today sits in the heading. */
 .head-tools { display: flex; align-items: center; gap: 6px; }
+.kol-head { flex-wrap: wrap; row-gap: 8px; }
 .time-pick { display: flex; align-items: center; gap: 8px; }
 .time-btn { flex: 1; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; text-align: left; }
 .time-btn .tp-t { color: var(--muted); font-size: var(--fs-sm); }
@@ -395,6 +396,25 @@ a.btn { text-decoration: none; color: var(--ink); }
 .wv:not(.on) { cursor: pointer; }
 .wsep { position: relative; font-size: 2rem; font-weight: 700; color: var(--ink); }
 .pop-btns { display: flex; gap: 8px; }
+/* Daily report */
+.sheet.report { max-height: 92%; }
+.rp-sec { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.rp-sec h4 { margin: 0; font-size: var(--fs-md); font-weight: 600; }
+.rp-list { list-style: none; margin: 0; padding: 0; }
+.rp-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
+.rp-list li span { font-size: var(--fs-md); }
+.rp-list li strong { font-weight: 600; }
+.rp-list .icon-btn { width: 32px; height: 32px; background: none; }
+.rp-form { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
+.rp-form input, .abs-pop .search { font: inherit; font-size: 1rem; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; }
+.rp-sec > .btn { align-self: flex-start; }
+.rp-scope { align-self: flex-start; height: 40px; }
+.rp-text { width: 100%; font: inherit; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
+.abs-pop { max-height: 80vh; }
+.abs-why { height: 40px; }
+.abs-why button { flex: 1; }
+.abs-list { overflow-y: auto; min-height: 0; flex: 1; }
+.abs-list small { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 400; }
 .pop-btns .btn { flex: 1; }
 .tools { display: flex; gap: 8px; align-items: center; }
 .tools .search { flex: 1; min-width: 0; }
@@ -625,6 +645,14 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     peopleOff: 0,
     peopleAt: null,
     timePop: false,
+    report: false,
+    reportFresh: false,
+    reportForm: {},
+    reportErr: null,
+    reportCopied: false,
+    absPop: false,
+    absWhy: "sjuk",
+    absQ: "",
     favQ: "",
     planQ: "",
     deptIdx: 0,
@@ -831,14 +859,21 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         PLAN_OF = m;
         render();
       }, function () {});
+      db.collection("days").onSnapshot(function (snap) {
+        var m = {};
+        snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.date) m[x.date] = { absent: x.absent || {}, subs: Array.isArray(x.subs) ? x.subs : [] }; });
+        DAY_EDIT = m;
+        render();
+      }, function () {});
       // New names for departments and people moved to another department, shared by everyone.
       db.collection("depts").onSnapshot(function (snap) {
-        var e = { names: {}, moves: {}, people: {} };
+        var e = { names: {}, moves: {}, people: {}, extra: {} };
         snap.docs.forEach(function (doc) {
           var x = doc.data(); if (!x) return;
           if (x.kind === "name" && typeof x.idx === "number" && x.name) e.names[x.idx] = x.name;
           else if (x.kind === "move" && x.person && typeof x.dept === "number") e.moves[x.person] = x.dept;
           else if (x.kind === "pname" && x.orig && x.name) e.people[x.orig] = x.name;
+          else if (x.kind === "extra" && x.orig) { if (x.on) e.extra[x.orig] = true; }
         });
         DEPT_EDIT = e;
         render();
@@ -881,7 +916,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // Departments come from the file; names and moves made in the app are kept on top of it.
   // Without the shared store (outside claude.ai) they are kept on this device.
   var DEPT_EDIT = readDeptEdit();
-  function readDeptEdit() { try { var e = JSON.parse(lsGet("skift.depts") || "null"); if (e && e.names && e.moves) { e.people = e.people || {}; return e; } } catch (x) {} return { names: {}, moves: {}, people: {} }; }
+  function readDeptEdit() { try { var e = JSON.parse(lsGet("skift.depts") || "null"); if (e && e.names && e.moves) { e.people = e.people || {}; e.extra = e.extra || {}; return e; } } catch (x) {} return { names: {}, moves: {}, people: {}, extra: {} }; }
   // Staff can be renamed in the app. The file's name stays in p.orig and is what plans, moves and
   // renames are stored under; p.name is what is shown. Your profile and favourites follow a rename.
   function applyNames() {
@@ -904,12 +939,36 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
   function deptOf(p) { var m = DEPT_EDIT.moves[keyOf(p)]; return m != null && DATA.depts && DATA.depts[m] ? m : p.dept != null ? p.dept : null; }
   function writeDept(kind, key, value) {
-    if (kind === "name") DEPT_EDIT.names[key] = value; else if (kind === "pname") DEPT_EDIT.people[key] = value; else DEPT_EDIT.moves[key] = value;
+    if (kind === "name") DEPT_EDIT.names[key] = value; else if (kind === "pname") DEPT_EDIT.people[key] = value;
+    else if (kind === "extra") { if (value) DEPT_EDIT.extra[key] = true; else delete DEPT_EDIT.extra[key]; }
+    else DEPT_EDIT.moves[key] = value;
     buzz(); render();
     if (!dbRef) { lsSet("skift.depts", JSON.stringify(DEPT_EDIT)); return; }
-    var id = kind === "name" ? "n" + key : (kind === "pname" ? "p_" : "m_") + changeId(key, "").slice(1);
-    dbRef.collection("depts").doc(id).set(kind === "name" ? { kind: "name", idx: key, name: value } : kind === "pname" ? { kind: "pname", orig: key, name: value } : { kind: "move", person: key, dept: value }).then(null, function () {
+    var id = kind === "name" ? "n" + key : (kind === "pname" ? "p_" : kind === "extra" ? "x_" : "m_") + changeId(key, "").slice(1);
+    dbRef.collection("depts").doc(id).set(kind === "name" ? { kind: "name", idx: key, name: value } : kind === "pname" ? { kind: "pname", orig: key, name: value } : kind === "extra" ? { kind: "extra", orig: key, on: !!value } : { kind: "move", person: key, dept: value }).then(null, function () {
       state.deptErr = "Ändringen kunde inte sparas. Försök igen."; render();
+    });
+  }
+  // Regular substitutes and extra staff, marked in the app (the file does not say who they are).
+  function isExtra(p) { return !!DEPT_EDIT.extra[keyOf(p)]; }
+
+  // Today's absences (sick, VAB, off, holiday) and substitutes, entered for the daily report.
+  // One record per date, shared like the rest; kept on this phone outside claude.ai.
+  var ABSENCE = [["sjuk", "Sjuk"], ["vab", "VAB"], ["ledig", "Ledig"], ["semester", "Semester"]];
+  var DAY_EDIT = {};
+  try { DAY_EDIT = JSON.parse(lsGet("skift.days") || "{}") || {}; } catch (e) { DAY_EDIT = {}; }
+  function dayEdit(d) { var k = ymd(d); return DAY_EDIT[k] || { absent: {}, subs: [] }; }
+  function writeDay(d, rec) {
+    var k = ymd(d);
+    DAY_EDIT[k] = rec; buzz(); render();
+    if (!dbRef) {
+      // Only the last two weeks are kept on the phone.
+      var old = ymd(addDays(today(), -14));
+      Object.keys(DAY_EDIT).forEach(function (x) { if (x < old) delete DAY_EDIT[x]; });
+      lsSet("skift.days", JSON.stringify(DAY_EDIT)); return;
+    }
+    dbRef.collection("days").doc("d" + k).set({ date: k, absent: rec.absent, subs: rec.subs }).then(null, function () {
+      state.reportErr = "Ändringen kunde inte sparas. Försök igen."; render();
     });
   }
   function planOf(p) {
@@ -965,6 +1024,103 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function wheel(id, vals, cur, label) {
     return '<div class="wheel" id="' + id + '" role="listbox" aria-label="' + label + '" tabindex="0" data-cur="' + Math.max(0, vals.indexOf(cur)) + '">' +
       vals.map(function (v) { return '<div class="wv' + (v === cur ? " on" : "") + '" data-act="wheelpick" data-v="' + v + '">' + pad(v) + "</div>"; }).join("") + "</div>";
+  }
+  // ---------- Daily report ----------
+  // Today's staff as text for Teams: who works and when, substitutes, who is away, who opens and closes.
+  var REPORT_OPTS = [["times", "Tider"], ["regular", "Ordinarie personal"], ["subs", "Vikarier och förstärkning"], ["absent", "Frånvarande"], ["oc", "Öppning och stängning"], ["depts", "Dela upp per avdelning"]];
+  function reportOpts() {
+    var o = { times: true, regular: true, subs: true, absent: true, oc: true, depts: true, scope: "all" };
+    try { var x = JSON.parse(lsGet("skift.report") || "null"); if (x) Object.keys(o).forEach(function (k) { if (x[k] != null) o[k] = x[k]; }); } catch (e) {}
+    return o;
+  }
+  function reportText(me, d) {
+    var o = reportOpts(), rec = dayEdit(d), dl = deptList(), mine = me ? deptOf(me) : null;
+    var inScope = function (dept) { return o.scope !== "mine" || mine == null || dept === mine; };
+    var rows = [];
+    DATA.people.forEach(function (p) {
+      var s = shiftOn(p, d), dept = deptOf(p);
+      if (s.kind !== "work" || rec.absent[keyOf(p)] || !inScope(dept)) return;
+      rows.push({ name: p.name, s: s.ranges[0].s, e: s.ranges[s.ranges.length - 1].e, txt: rangeText(s), dept: dept, sub: isExtra(p) });
+    });
+    rec.subs.forEach(function (x) {
+      var sh = parseShift(x.time || ""), w = sh.kind === "work" && sh.ranges.length;
+      if (!inScope(x.dept == null ? null : x.dept)) return;
+      rows.push({ name: x.name, s: w ? sh.ranges[0].s : 9999, e: w ? sh.ranges[sh.ranges.length - 1].e : 0, txt: w ? rangeText(sh) : "", dept: x.dept == null ? null : x.dept, sub: true });
+    });
+    var out = ["Dagsrapport " + DAYS[dow(d)].toLowerCase() + " " + d.getDate() + " " + MONTHS_LONG[d.getMonth()]];
+    if (o.oc) {
+      var timed = rows.filter(function (r) { return r.s < 9999; });
+      if (timed.length) {
+        var lo = Math.min.apply(null, timed.map(function (r) { return r.s; })), hi = Math.max.apply(null, timed.map(function (r) { return r.e; }));
+        var names = function (f) { return timed.filter(f).map(function (r) { return r.name; }).join(", "); };
+        out.push("", "Öppnar " + hhmm(lo) + ": " + names(function (r) { return r.s === lo; }), "Stänger " + hhmm(hi) + ": " + names(function (r) { return r.e === hi; }));
+      }
+    }
+    var shown = rows.filter(function (r) { return r.sub ? o.subs : o.regular; }).sort(function (a, b) { return a.s - b.s || a.name.localeCompare(b.name, "sv"); });
+    var line = function (r) { return r.name + (o.times && r.txt ? " " + r.txt : "") + (r.sub ? " (vikarie)" : ""); };
+    if (o.depts && dl) {
+      deptOrder(me, dl).concat([null]).forEach(function (i) {
+        var xs = shown.filter(function (r) { return r.dept === i; });
+        if (xs.length) out.push("", (i == null ? "Utan avdelning" : dl[i].name) + " (" + xs.length + ")", xs.map(line).join("\n"));
+      });
+    } else if (shown.length) out.push("", "På jobbet (" + shown.length + ")", shown.map(line).join("\n"));
+    if (o.absent) {
+      var ab = Object.keys(rec.absent).map(function (k) {
+        var p = DATA.people.filter(function (x) { return keyOf(x) === k; })[0];
+        if (!p || !inScope(deptOf(p))) return null;
+        var why = ABSENCE.filter(function (a) { return a[0] === rec.absent[k]; })[0];
+        return p.name + ", " + (why ? why[1].toLowerCase().replace("vab", "VAB") : rec.absent[k]);
+      }).filter(Boolean).sort(function (a, b) { return a.localeCompare(b, "sv"); });
+      if (ab.length) out.push("", "Frånvarande", ab.join("\n"));
+    }
+    return out.join("\n");
+  }
+  function renderReport(me) {
+    var d = addDays(today(), state.peopleOff), rec = dayEdit(d), o = reportOpts(), dl = deptList(), f = state.reportForm;
+    var mine = me ? deptOf(me) : null;
+    var abs = Object.keys(rec.absent).map(function (k) {
+      var p = DATA.people.filter(function (x) { return keyOf(x) === k; })[0]; if (!p) return "";
+      var why = ABSENCE.filter(function (a) { return a[0] === rec.absent[k]; })[0];
+      return '<li><span><strong>' + esc(p.name) + "</strong> " + esc(why ? why[1] : rec.absent[k]) + '</span><button class="icon-btn" data-act="absdel" data-k="' + esc(k) + '" aria-label="Ta bort ' + esc(p.name) + '">' + ICON.close + "</button></li>";
+    }).join("");
+    var subs = rec.subs.map(function (x, i) {
+      return '<li><span><strong>' + esc(x.name) + "</strong> " + esc(x.time || "") + (dl && x.dept != null && dl[x.dept] ? " · " + esc(dl[x.dept].name) : "") + '</span><button class="icon-btn" data-act="subdel" data-i="' + i + '" aria-label="Ta bort ' + esc(x.name) + '">' + ICON.close + "</button></li>";
+    }).join("");
+    var fd = f.dept != null ? f.dept : mine;
+    var text = reportText(me, d), canShare = !!navigator.share;
+    return '<div class="sheet-bg' + (state.reportFresh ? " in" : "") + '" data-act="reportclose"></div><div class="sheet report' + (state.reportFresh ? " in" : "") + '" role="dialog" aria-modal="true" aria-labelledby="report-title"><div class="wrap sheet-in">' +
+      '<div class="sheet-head"><div style="min-width:0"><h3 id="report-title">Dagsrapport</h3><div class="sub">' + DAYS[dow(d)] + " " + shortDate(d) + '</div></div><button class="icon-btn" data-act="reportclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
+      (state.reportErr ? '<div class="msg err" role="alert">' + esc(state.reportErr) + "</div>" : "") +
+      '<section class="rp-sec"><h4>Frånvaro</h4>' + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn" data-act="absadd">Lägg till frånvaro</button></section>' +
+      '<section class="rp-sec"><h4>Vikarier idag</h4>' + (subs ? '<ul class="rp-list">' + subs + "</ul>" : "") +
+        '<div class="rp-form"><input id="sub-name" type="text" placeholder="Namn" autocomplete="off" value="' + esc(f.name || "") + '" aria-label="Vikariens namn">' +
+        '<input id="sub-time" type="text" inputmode="numeric" placeholder="08:00-16:00" autocomplete="off" value="' + esc(f.time || "") + '" aria-label="Tid, till exempel 08:00-16:00"></div>' +
+        (dl ? '<div class="chips rp-depts" role="group" aria-label="Avdelning">' + dl.map(function (x, i) { return '<button class="chip" data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "") +
+        '<button class="btn" data-act="subadd">Lägg till vikarie</button></section>' +
+      '<section class="rp-sec"><h4>Visa i texten</h4><ul class="check-list">' + REPORT_OPTS.map(function (x) {
+        if (x[0] === "depts" && !dl) return "";
+        return '<li><button data-act="ropt" data-k="' + x[0] + '" aria-pressed="' + !!o[x[0]] + '"><span>' + x[1] + "</span>" + ICON.check + "</button></li>";
+      }).join("") + "</ul>" +
+        (dl && mine != null ? '<div class="mini-seg rp-scope" role="group" aria-label="Vilka"><button data-act="rscope" data-s="all" aria-pressed="' + (o.scope !== "mine") + '">Hela förskolan</button><button data-act="rscope" data-s="mine" aria-pressed="' + (o.scope === "mine") + '">' + esc(dl[mine].name) + "</button></div>" : "") + "</section>" +
+      '<section class="rp-sec"><h4>Text</h4><textarea id="report-text" class="rp-text" readonly rows="10">' + esc(text) + "</textarea>" +
+        '<div class="pop-btns"><button class="btn' + (canShare ? "" : " primary") + '" data-act="rcopy">' + (state.reportCopied ? "Kopierad" : "Kopiera text") + "</button>" + (canShare ? '<button class="btn primary" data-act="rshare">Dela</button>' : "") + "</div></section>" +
+      "</div></div>";
+  }
+  // Choosing who is away: the reason first, then the name.
+  function renderAbsPop() {
+    var d = addDays(today(), state.peopleOff), rec = dayEdit(d), why = state.absWhy || "sjuk";
+    var people = DATA.people.filter(function (p) { return !rec.absent[keyOf(p)]; }).sort(function (a, b) {
+      var wa = shiftOn(a, d).kind === "work", wb = shiftOn(b, d).kind === "work";
+      return (wb - wa) || byPersonName(a, b);
+    });
+    return '<div class="sheet-bg pop-bg" data-act="absclose"></div><div class="plan-pop abs-pop" role="dialog" aria-modal="true" aria-labelledby="abs-title">' +
+      '<div class="sheet-head"><div style="min-width:0"><h3 id="abs-title">Lägg till frånvaro</h3><div class="sub">Välj orsak och sedan namn</div></div><button class="icon-btn" data-act="absclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
+      '<div class="mini-seg abs-why" role="group" aria-label="Orsak">' + ABSENCE.map(function (a) { return '<button data-act="abswhy" data-w="' + a[0] + '" aria-pressed="' + (why === a[0]) + '">' + a[1] + "</button>"; }).join("") + "</div>" +
+      '<input id="abs-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.absQ || "") + '" autocomplete="off" aria-label="Sök namn">' +
+      '<ul class="check-list abs-list" id="abs-list">' + people.map(function (p) {
+        var s = shiftOn(p, d);
+        return '<li data-q="' + esc(norm(p.name)) + '"><button data-act="absset" data-k="' + esc(keyOf(p)) + '"><span>' + esc(p.name) + '</span><small>' + (s.kind === "work" ? rangeText(s) : "Ledig") + "</small></button></li>";
+      }).join("") + '</ul><p class="hint" id="abs-none" hidden>Inget namn matchar.</p></div>';
   }
   function renderTimePop() {
     var off = state.peopleOff, t = addDays(today(), off), hr = dayHours(t);
@@ -1098,6 +1254,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (state.planOpen && state.view === "settings") html += renderPlanPop();
     if (state.deptPop) html += renderDeptPop();
     if (state.timePop && state.view === "grid") html += renderTimePop();
+    if (state.report && state.view === "grid") { html += renderReport(me); state.reportFresh = false; }
+    if (state.absPop && state.report && state.view === "grid") html += renderAbsPop();
     var focusId = document.activeElement && document.activeElement.id;
     var oldDeck = document.getElementById("deck"), deckTop = oldDeck ? oldDeck.scrollTop : 0;
     var oldSheet = app.querySelector(".sheet"), sheetTop = oldSheet ? oldSheet.scrollTop : 0, sheetKind = state.edit ? "edit" : state.person ? "person" : "";
@@ -1534,7 +1692,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     function cmp(a, b) { return a.st - b.st || timeKey(a) - timeKey(b) || byName(a, b); }
     function row(x) {
       var isMe = me && me.name === x.p.name, cls = x.st === 0 ? (at != null ? "now" : "work") : x.st === 3 ? (x.s.kind === "note" ? "note" : "past") : x.st === 2 ? "past" : "work";
-      return '<li data-q="' + esc(norm(x.p.name)) + '"' + (isMe ? ' class="me"' : "") + '><button class="prow slim" data-act="person" data-name="' + esc(x.p.name) + '"><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : "") + '</span><span class="pt ' + cls + '">' + x.txt + "</span></button></li>";
+      return '<li data-q="' + esc(norm(x.p.name)) + '"' + (isMe ? ' class="me"' : "") + '><button class="prow slim" data-act="person" data-name="' + esc(x.p.name) + '"><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : isExtra(x.p) ? "<small>vikarie</small>" : "") + '</span><span class="pt ' + cls + '">' + x.txt + "</span></button></li>";
     }
     function ul(list) { return '<ul class="plist">' + list.slice().sort(cmp).map(row).join("") + "</ul>"; }
     var atText = chosen ? " kl. " + hhmm(at) : isToday ? " nu" : "";
@@ -1558,7 +1716,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       (chosen ? "Kl. " + hhmm(at) : isToday ? "Nu, " + hhmm(at) : "Hela dagen") + "</span>" + ICON.down + "</button>" +
       (chosen ? '<button class="text-btn" data-act="peopleat0">' + (isToday ? "Nu" : "Hela dagen") + "</button>" : "") + "</div>";
     return '<div class="view">' + exampleNote() +
-      '<div class="sec-head"><h2>Kollegor</h2><div class="head-tools">' + (isToday ? "" : todayBtn("people0", true)) + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div></div>" +
+      '<div class="sec-head kol-head"><h2>Kollegor</h2><div class="head-tools">' + '<button class="text-btn" data-act="reportopen">Dagsrapport</button>' + (isToday ? "" : todayBtn("people0", true)) + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div></div>" +
       '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + "</button>" +
       '<span class="dn-mid"><span class="dn-label" data-pslide>' + (off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "") + (off >= -1 && off <= 1 ? DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + "</span></span>" +
       '<button class="dn-arrow" data-act="peopleday" data-d="1" aria-label="Nästa dag">' + ICON.right + "</button></div>" +
@@ -1597,7 +1755,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   // Settings: everyday choices on the first page, schedule and rules as rows that open their own page.
-  var SUBS = [["file", "Schemafil"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["help", "Vilka Excel-filer fungerar?"], ["favs", "Avdelningskollegor"], ["dept", "Avdelning"]];
+  var SUBS = [["file", "Schemafil"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["help", "Vilka Excel-filer fungerar?"], ["favs", "Avdelningskollegor"], ["dept", "Avdelning"], ["extras", "Vikarier och förstärkning"]];
   // Names sorted as people read them: "(Paula)" among the P's.
   function byPersonName(a, b) { var k = function (n) { return n.replace(/^[^0-9A-Za-zÅÄÖåäöÉé]+/, ""); }; return k(a.name).localeCompare(k(b.name), "sv"); }
   function setRow(act, key, title, value) {
@@ -1628,7 +1786,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     out += '<section class="panel"><h3>Gäller alla</h3><p class="hint">' + (dbState === "ready" ? "Ändringar här syns för alla som använder appen." : "Ändringar här sparas på den här telefonen.") + '</p><ul class="set-list">' +
       setRow("sub", "file", "Schemafil", isNaN(up) ? "" : "Uppdaterad " + shortDate(up)) +
       setRow("sub", "plan", "Planeringstid", chosen ? chosen + " valda" : "Automatisk") +
-      (dl ? setRow("sub", "depts", "Avdelningar", dl.length + " st") : "") + "</ul>" +
+      (dl ? setRow("sub", "depts", "Avdelningar", dl.length + " st") : "") +
+      setRow("sub", "extras", "Vikarier och förstärkning", Object.keys(DEPT_EDIT.extra).length ? Object.keys(DEPT_EDIT.extra).length + " valda" : "Inga valda") + "</ul>" +
       '<div class="set-inline"><div class="si-l"><span class="si-t">Schemavecka</span><span class="si-s">Vecka ' + isoWeek(t) + " just nu</span></div>" +
       '<div class="mini-seg" role="group" aria-label="Schemavecka nu">';
     for (var w = 0; w < DATA.weeks; w++) out += '<button data-act="setweek" data-w="' + w + '" aria-pressed="' + (w === curW) + '">' + (w + 1) + "</button>";
@@ -1694,6 +1853,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         '<ul class="check-list" id="fav-list">' + DATA.people.filter(function (x) { return !(me && x.name === me.name); }).sort(byPersonName).map(function (x) {
           return '<li data-q="' + esc(norm(x.name)) + '"><button data-act="fav" data-name="' + esc(x.name) + '" aria-pressed="' + isFav(x.name) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>";
         }).join("") + '</ul><p class="hint" id="fav-none" hidden>Inget namn matchar.</p></section>';
+    } else if (sub === "extras") {
+      out += '<section class="panel"><p class="hint">Personer i schemat som är vikarier eller extra förstärkning. De markeras som vikarier i dagsrapporten.</p>' +
+        (state.deptErr ? '<div class="msg err" role="alert">' + esc(state.deptErr) + "</div>" : "") +
+        '<ul class="check-list">' + DATA.people.slice().sort(byPersonName).map(function (x) {
+          return '<li><button data-act="extra" data-name="' + esc(x.name) + '" aria-pressed="' + isExtra(x) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>";
+        }).join("") + "</ul></section>";
     } else if (sub === "dept") {
       var members = DATA.people.filter(function (x) { return deptOf(x) === state.deptIdx; }).sort(byPersonName);
       out += '<section class="panel"><p class="hint">Tryck på ett namn för att flytta personen till en annan avdelning.</p>' +
@@ -2615,6 +2780,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (act === "subback") { state.sub = state.sub === "dept" ? "depts" : null; state.msg = null; render(); window.scrollTo(0, 0); return; }
     if (act === "gofavs") { state.view = "settings"; state.sub = "favs"; lsSet("skift.view", "settings"); render(); window.scrollTo(0, 0); return; }
     if (act === "deptopen") { state.sub = "dept"; state.deptIdx = +b.getAttribute("data-i"); render(); window.scrollTo(0, 0); return; }
+    if (act === "extra") { var xp = personByName(b.getAttribute("data-name")); if (xp) writeDept("extra", keyOf(xp), !isExtra(xp)); return; }
     if (act === "favauto") { state.favs = []; lsSet("skift.favs", null); buzz(); render(); return; }
     if (act === "daysort") { state.daySort = b.getAttribute("data-s"); lsSet("skift.daysort", state.daySort === "end" ? "end" : null); render(); return; }
     if (act === "peoplemode") { state.peopleMode = b.getAttribute("data-m"); lsSet("skift.peoplemode", state.peopleMode === "dept" ? "dept" : null); render(); return; }
@@ -2632,6 +2798,39 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       var wl = b.parentNode, wi = Array.prototype.indexOf.call(wl.children, b);
       wl.scrollTo({ top: wi * WHEEL_ROW, behavior: reduceMotion ? "auto" : "smooth" });
     }
+    else if (act === "reportopen") { state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); }
+    else if (act === "reportclose") { state.report = false; state.absPop = false; render(); }
+    else if (act === "absadd") { state.absPop = true; state.absQ = ""; render(); }
+    else if (act === "absclose") { state.absPop = false; render(); }
+    else if (act === "abswhy") { state.absWhy = b.getAttribute("data-w"); render(); }
+    else if (act === "absset" || act === "absdel" || act === "subadd" || act === "subdel") {
+      var rd = addDays(today(), state.peopleOff), rr = dayEdit(rd), nr = { absent: Object.assign({}, rr.absent), subs: rr.subs.slice() };
+      if (act === "absset") { nr.absent[b.getAttribute("data-k")] = state.absWhy || "sjuk"; state.absPop = false; }
+      else if (act === "absdel") delete nr.absent[b.getAttribute("data-k")];
+      else if (act === "subdel") nr.subs.splice(+b.getAttribute("data-i"), 1);
+      else {
+        var sf = state.reportForm, sn = (sf.name || "").trim();
+        if (!sn) { var ni = document.getElementById("sub-name"); if (ni) ni.focus(); return; }
+        var sme = personByName(state.profile), sdep = sf.dept != null ? sf.dept : sme ? deptOf(sme) : null;
+        var st = (sf.time || "").trim().slice(0, 30), sp = parseShift(st);
+        nr.subs.push({ name: sn.slice(0, 40), time: sp.kind === "work" && sp.ranges.length ? rangeText(sp) : st, dept: sdep == null ? null : sdep });
+        state.reportForm = {};
+      }
+      state.reportErr = null; state.reportCopied = false; writeDay(rd, nr);
+    }
+    else if (act === "subdept") { state.reportForm.dept = +b.getAttribute("data-i"); render(); }
+    else if (act === "ropt" || act === "rscope") {
+      var ro = reportOpts();
+      if (act === "ropt") ro[b.getAttribute("data-k")] = !ro[b.getAttribute("data-k")]; else ro.scope = b.getAttribute("data-s");
+      lsSet("skift.report", JSON.stringify(ro)); state.reportCopied = false; render();
+    }
+    else if (act === "rcopy") {
+      var ta = document.getElementById("report-text"), txt = ta ? ta.value : "";
+      var done = function () { state.reportCopied = true; buzz(); render(); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { ta.removeAttribute("readonly"); ta.select(); try { document.execCommand("copy"); done(); } catch (x) {} ta.setAttribute("readonly", ""); });
+      else if (ta) { ta.select(); try { document.execCommand("copy"); done(); } catch (x) {} }
+    }
+    else if (act === "rshare") { var tx = document.getElementById("report-text"); if (navigator.share && tx) navigator.share({ text: tx.value }).then(null, function () {}); }
     else if (act === "timeclose") { state.timePop = false; render(); }
     else if (act === "timeclear") { state.timePop = false; state.peopleAt = null; render(); }
     else if (act === "timeset") {
@@ -2683,12 +2882,17 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
   app.addEventListener("input", function (e) {
     if (e.target.id === "pick-q") { state.pickQ = e.target.value; filterPicker(state.pickQ); return; }
+    if (e.target.id === "sub-name") { state.reportForm.name = e.target.value; return; }
+    if (e.target.id === "sub-time") { state.reportForm.time = e.target.value; return; }
+    if (e.target.id === "abs-q") { state.absQ = e.target.value; filterList(state.absQ, "#abs-list", "abs-none"); return; }
     if (e.target.id === "fav-q") { state.favQ = e.target.value; filterList(state.favQ, "#fav-list", "fav-none"); return; }
     if (e.target.id === "plan-q") { state.planQ = e.target.value; filterList(state.planQ, "#plan-list", "plan-none"); return; }
     if (e.target.id === "people-q") { var hadQ = !!state.peopleQ.trim(); state.peopleQ = e.target.value; if (hadQ !== !!state.peopleQ.trim()) render(); else filterList(state.peopleQ, "#people-list", "people-none"); return; }
   });
   app.addEventListener("keydown", function (e) {
     if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.target.classList && e.target.classList.contains("wheel")) { e.preventDefault(); e.target.scrollTop += (e.key === "ArrowDown" ? 1 : -1) * WHEEL_ROW; return; }
+    if (e.key === "Escape" && state.absPop) { state.absPop = false; render(); return; }
+    if (e.key === "Escape" && state.report) { state.report = false; render(); return; }
     if (e.key === "Escape" && (state.planOpen || state.deptPop || state.timePop)) { state.planOpen = null; state.deptPop = null; state.timePop = false; render(); return; }
     if (e.key === "Escape" && (state.edit || state.person)) { closeSheet(); return; }
     if (e.key === "Enter" && e.target.id === "pick-q") {
