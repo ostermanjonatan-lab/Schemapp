@@ -287,7 +287,7 @@ button.chip { font: inherit; font-size: var(--fs-sm); color: var(--ink); cursor:
 .oc-card { background: var(--surface); border-radius: var(--radius); padding: 16px 16px 6px; gap: 6px; box-shadow: 0 1px 2px rgba(51, 27, 63, 0.06); }
 .oc-card .oc-list li, .oc-card .oc-list li:last-child { padding: 6px 0; border: 0; }
 .oc-card .oc-t { font-size: var(--fs-lg); }
-/* Den här veckan and Avdelningskollegor on Mitt schema: white cards like Idag på jobbet. */
+/* Den här veckan and Avdelningskollegor on Mitt schema: white cards like Öppning och stängning. */
 .home-card { background: var(--surface); border-radius: var(--radius); padding: 16px; box-shadow: 0 1px 2px rgba(51, 27, 63, 0.06); overflow: hidden; }
 .home-card .week { border-bottom: 0; }
 /* Den här veckan is green in both themes; the variables restyle everything inside. */
@@ -1201,8 +1201,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (state.ocOffset == null) return "";
     var t = today(), off = state.ocOffset, d = addDays(t, off), oc = openClose(d);
     if (!oc) return "";
-    var when = off === 0 ? "Idag på jobbet" : off === 1 ? "Imorgon på jobbet" : off === -1 ? "Igår på jobbet" : DAYS[dow(d)] + " " + shortDate(d);
-    return '<section class="oc oc-card" aria-label="Vem öppnar och stänger"><div class="sec-head"><h2 data-ocslide>' + esc(when) + '</h2><div class="stepper">' + todayBtn("oc0", off !== ocDayFrom(0, 1)) + "</div></div>" +
+    var rel = off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "";
+    var when = rel + (rel ? DAYS[dow(d)].toLowerCase() : DAYS[dow(d)]) + " " + shortDate(d);
+    return '<section class="oc oc-card" aria-label="Öppning och stängning"><div class="sec-head"><div><h2>Öppning och stängning</h2><div class="sub" data-ocslide>' + esc(when) + '</div></div><div class="stepper">' + todayBtn("oc0", off !== ocDayFrom(0, 1)) + "</div></div>" +
       '<div class="oc-body" data-ocslide>' + ocGrid(oc, me) + "</div>" +
       swipeHint("ocday", dow(d) > 4 ? 7 : 5, dow(d), "dag") + "</section>";
   }
