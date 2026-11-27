@@ -381,6 +381,9 @@ a.btn { text-decoration: none; color: var(--ink); }
 /* The date has the whole width between the arrows; the button back to today sits in the heading. */
 .head-tools { display: flex; align-items: center; gap: 6px; }
 .kol-head { flex-wrap: wrap; row-gap: 8px; }
+.kol-head .head-tools { margin-left: auto; }
+.report-btn { width: 40px; height: 40px; }
+.report-btn svg { width: 20px; height: 20px; }
 .time-pick { display: flex; align-items: center; gap: 8px; }
 .time-btn { flex: 1; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; text-align: left; }
 .time-btn .tp-t { color: var(--muted); font-size: var(--fs-sm); }
@@ -1082,7 +1085,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     DATA.people.forEach(function (p) {
       var s = shiftOn(p, d), dept = deptOf(p);
       if (s.kind !== "work" || rec.absent[keyOf(p)] || !inScope(dept)) return;
-      rows.push({ name: p.name, s: s.ranges[0].s, e: s.ranges[s.ranges.length - 1].e, txt: rangeText(s), dept: dept, sub: isExtra(p) });
+      rows.push({ name: p.name, s: s.ranges[0].s, e: s.ranges[s.ranges.length - 1].e, txt: rangeText(s), dept: dept, sub: isExtra(p), extra: isExtra(p) });
     });
     rec.subs.forEach(function (x) {
       var sh = parseShift(x.time || ""), w = sh.kind === "work" && sh.ranges.length;
@@ -1099,7 +1102,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       }
     }
     var shown = rows.filter(function (r) { return r.sub ? o.subs : o.regular; }).sort(function (a, b) { return a.s - b.s || a.name.localeCompare(b.name, "sv"); });
-    var line = function (r) { return r.name + (o.times && r.txt ? " " + r.txt : "") + (r.sub ? " (vikarie)" : ""); };
+    var line = function (r) { return r.name + (o.times && r.txt ? " " + r.txt : "") + (r.extra ? " (förstärkning)" : r.sub ? " (vikarie)" : ""); };
     // Who is away, as "Eva, VAB". Per department they stay in their own department, last.
     var awayRows = o.absent ? Object.keys(rec.absent).map(function (k) {
       var p = DATA.people.filter(function (x) { return keyOf(x) === k; })[0];
@@ -1311,6 +1314,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     mark: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#ACC7B4"/><rect x="7" y="9" width="18" height="16" rx="3.5" fill="none" stroke="#331B3F" stroke-width="2.2"/><path d="M12 6.5v4.5M20 6.5v4.5" fill="none" stroke="#331B3F" stroke-width="2.2" stroke-linecap="round"/><rect x="10.5" y="13.8" width="4.6" height="3.6" rx="1" fill="#331B3F"/><rect x="16.9" y="13.8" width="4.6" height="3.6" rx="1" fill="#331B3F"/><rect x="10.5" y="19" width="4.6" height="3.4" rx="1" fill="#331B3F"/><rect x="16.9" y="19" width="4.6" height="3.4" rx="1" fill="#E3A33B" stroke="#331B3F" stroke-width="1"/></svg>',
     home: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
     check: '<svg viewBox="0 0 16 16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>',
+    report: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg>',
     pen: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5l4 4M4 20l1-4.5L15.8 4.7a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.5 19 4 20z"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg>',
     groups: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="4" width="16" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="16" height="6.5" rx="1.8"/></svg>',
@@ -1825,7 +1829,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     function cmp(a, b) { return a.st - b.st || timeKey(a) - timeKey(b) || byName(a, b); }
     function row(x) {
       var isMe = me && me.name === x.p.name, cls = x.st === 0 ? (at != null ? "now" : "work") : x.st === 3 ? (x.s.kind === "note" ? "note" : "past") : x.st === 2 ? "past" : "work";
-      return '<li data-q="' + esc(norm(x.p.name)) + '"' + (isMe ? ' class="me"' : "") + '><button class="prow slim" data-act="person" data-name="' + esc(x.p.name) + '"><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : isExtra(x.p) ? "<small>vikarie</small>" : "") + '</span><span class="pt ' + cls + '">' + x.txt + "</span></button></li>";
+      return '<li data-q="' + esc(norm(x.p.name)) + '"' + (isMe ? ' class="me"' : "") + '><button class="prow slim" data-act="person" data-name="' + esc(x.p.name) + '"><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : isExtra(x.p) ? "<small>förstärkning</small>" : "") + '</span><span class="pt ' + cls + '">' + x.txt + "</span></button></li>";
     }
     function ul(list) { return '<ul class="plist">' + list.slice().sort(cmp).map(row).join("") + "</ul>"; }
     var atText = chosen ? " kl. " + hhmm(at) : isToday ? " nu" : "";
@@ -1849,7 +1853,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       (chosen ? "Kl. " + hhmm(at) : isToday ? "Nu, " + hhmm(at) : "Hela dagen") + "</span>" + ICON.down + "</button>" +
       (chosen ? '<button class="text-btn" data-act="peopleat0">' + (isToday ? "Nu" : "Hela dagen") + "</button>" : "") + "</div>";
     return '<div class="view">' + exampleNote() +
-      '<div class="sec-head kol-head"><h2>Kollegor</h2><div class="head-tools">' + '<button class="text-btn" data-act="reportopen">Dagsrapport</button>' + (isToday ? "" : todayBtn("people0", true)) + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div></div>" +
+      '<div class="sec-head kol-head"><h2>Kollegor</h2><div class="head-tools">' + '<button class="icon-btn report-btn" data-act="reportopen" aria-label="Dagsrapport" title="Dagsrapport">' + ICON.report + "</button>" + (isToday ? "" : todayBtn("people0", true)) + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div></div>" +
       '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + "</button>" +
       '<span class="dn-mid"><span class="dn-label" data-pslide>' + (off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "") + (off >= -1 && off <= 1 ? DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + "</span></span>" +
       '<button class="dn-arrow" data-act="peopleday" data-d="1" aria-label="Nästa dag">' + ICON.right + "</button></div>" +
@@ -1895,7 +1899,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   // Settings: everyday choices on the first page, schedule and rules as rows that open their own page.
-  var SUBS = [["file", "Schemafil"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["help", "Vilka Excel-filer fungerar?"], ["favs", "Avdelningskollegor"], ["dept", "Avdelning"], ["extras", "Vikarier och förstärkning"]];
+  var SUBS = [["file", "Schemafil"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["help", "Vilka Excel-filer fungerar?"], ["favs", "Avdelningskollegor"], ["dept", "Avdelning"], ["extras", "Förstärkning"]];
   // Names sorted as people read them: "(Paula)" among the P's.
   function byPersonName(a, b) { var k = function (n) { return n.replace(/^[^0-9A-Za-zÅÄÖåäöÉé]+/, ""); }; return k(a.name).localeCompare(k(b.name), "sv"); }
   function setRow(act, key, title, value) {
@@ -1927,7 +1931,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       setRow("sub", "file", "Schemafil", isNaN(up) ? "" : "Uppdaterad " + shortDate(up)) +
       setRow("sub", "plan", "Planeringstid", chosen ? chosen + " valda" : "Automatisk") +
       (dl ? setRow("sub", "depts", "Avdelningar", dl.length + " st") : "") +
-      setRow("sub", "extras", "Vikarier och förstärkning", Object.keys(DEPT_EDIT.extra).length ? Object.keys(DEPT_EDIT.extra).length + " valda" : "Inga valda") + "</ul>" +
+      setRow("sub", "extras", "Förstärkning", Object.keys(DEPT_EDIT.extra).length ? Object.keys(DEPT_EDIT.extra).length + " valda" : "Inga valda") + "</ul>" +
       '<div class="set-inline"><div class="si-l"><span class="si-t">Schemavecka</span><span class="si-s">Vecka ' + isoWeek(t) + " just nu</span></div>" +
       '<div class="mini-seg" role="group" aria-label="Schemavecka nu">';
     for (var w = 0; w < DATA.weeks; w++) out += '<button data-act="setweek" data-w="' + w + '" aria-pressed="' + (w === curW) + '">' + (w + 1) + "</button>";
@@ -1994,7 +1998,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           return '<li data-q="' + esc(norm(x.name)) + '"><button data-act="fav" data-name="' + esc(x.name) + '" aria-pressed="' + isFav(x.name) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>";
         }).join("") + '</ul><p class="hint" id="fav-none" hidden>Inget namn matchar.</p></section>';
     } else if (sub === "extras") {
-      out += '<section class="panel"><p class="hint">Personer i schemat som är vikarier eller extra förstärkning. De markeras som vikarier i dagsrapporten.</p>' +
+      out += '<section class="panel"><p class="hint">Personer i schemat som är extra förstärkning. De markeras som förstärkning i dagsrapporten och i Kollegor.</p>' +
         (state.deptErr ? '<div class="msg err" role="alert">' + esc(state.deptErr) + "</div>" : "") +
         '<ul class="check-list">' + DATA.people.slice().sort(byPersonName).map(function (x) {
           return '<li><button data-act="extra" data-name="' + esc(x.name) + '" aria-pressed="' + isExtra(x) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>";
