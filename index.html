@@ -208,7 +208,7 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .favs thead th.cur { border-radius: 8px 8px 0 0; }
 .favs thead th.cur b { color: inherit; }
 .favs tbody tr:last-child .cur { border-radius: 0 0 8px 8px; }
-.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: var(--fs-sm); }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 4px 10px; font-size: var(--fs-sm); }
 .chip.me { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .chip em { font-style: normal; color: var(--warn); margin-left: 4px; }
 .group-label { font-size: var(--fs-md); color: var(--ink); font-weight: 600; margin-bottom: 6px; }
@@ -445,7 +445,14 @@ html.lock { overflow: hidden; }
 .wheels.small .wv, .wheels.small .wsep { font-size: 1.5rem; }
 .sub-time { flex: none; min-height: 44px; padding: 0 10px 0 12px; }
 .sub-time .tp-v { white-space: nowrap; }
-.rp-past { display: flex; flex-direction: column; gap: 6px; }
+.rp-past { display: flex; flex-direction: column; gap: 2px; }
+.rp-pastlist { list-style: none; margin: 0; padding: 0; }
+.rp-pastlist li + li { border-top: 1px solid var(--line); }
+.rp-pastlist button { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; padding: 0 4px; background: none; border: 0; font: inherit; font-size: var(--fs-md); color: var(--ink); text-align: left; cursor: pointer; border-radius: 8px; }
+.rp-pastlist button small { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rp-pastlist button[aria-pressed="true"], .rp-pastlist button:active { background: var(--accent-soft); }
+.mini-seg.rp-deptseg { height: auto; display: grid; grid-template-columns: repeat(2, 1fr); }
+.rp-deptseg button { height: 38px; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-seg.p-away { margin: 4px 0 2px; height: auto; display: grid; grid-template-columns: repeat(3, 1fr); }
 .p-away button { height: 38px; padding: 0 8px; white-space: nowrap; }
 .p-big.away { color: var(--warn); }
@@ -1253,12 +1260,14 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       same +
       '<section class="rp-sec"><h4>Frånvaro</h4>' + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn" data-act="absadd">Lägg till frånvaro</button></section>' +
       '<section class="rp-sec"><h4>Vikarier idag</h4>' + (subs ? '<ul class="rp-list">' + subs + "</ul>" : "") +
+        // Substitutes from before as plain rows (name, hours and department last time); a tap fills in the form.
+        (past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><ul class="rp-pastlist">' + past.slice(0, 6).map(function (x) {
+          return '<li><button data-act="subpast" data-n="' + esc(x.name) + '" data-t="' + esc(x.time || "") + '" data-d="' + (x.dept == null ? "" : x.dept) + '"' + (norm(f.name || "") === norm(x.name) ? ' aria-pressed="true"' : "") + '><span>' + esc(x.name) + '</span><small>' +
+            esc([x.time || "", dl && x.dept != null && dl[x.dept] ? dl[x.dept].name : ""].filter(Boolean).join(" · ")) + "</small></button></li>";
+        }).join("") + "</ul></div>" : "") +
         '<div class="rp-form"><input id="sub-name" type="text" placeholder="Namn" autocomplete="off" value="' + esc(f.name || "") + '" aria-label="Vikariens namn">' +
         '<button class="time-btn sub-time" data-act="subtimeopen" aria-haspopup="dialog"><span class="tp-v">' + (f.s != null ? hhmm(f.s) + "–" + hhmm(f.e) : "Välj tid") + "</span>" + ICON.down + "</button></div>" +
-        (past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><div class="chips">' + past.map(function (x) {
-          return '<button class="chip" data-act="subpast" data-n="' + esc(x.name) + '" data-t="' + esc(x.time || "") + '" data-d="' + (x.dept == null ? "" : x.dept) + '">' + esc(x.name) + "</button>";
-        }).join("") + "</div></div>" : "") +
-        (dl ? '<div class="chips rp-depts" role="group" aria-label="Avdelning">' + dl.map(function (x, i) { return '<button class="chip" data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "") +
+        (dl ? '<div class="mini-seg rp-deptseg" role="group" aria-label="Avdelning">' + dl.map(function (x, i) { return '<button data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "") +
         '<button class="btn" data-act="subadd">Lägg till vikarie</button></section>' +
       // Choices made once and then left: folded away.
       '<section class="rp-sec"><button class="rp-fold" data-act="rcustom" aria-expanded="' + !!state.reportCustom + '"><span>Anpassa texten</span>' + ICON.down + "</button>" +
