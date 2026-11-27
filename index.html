@@ -426,9 +426,23 @@ a.btn { text-decoration: none; color: var(--ink); }
 .rp-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .rp-form input, .abs-pop .search { font: inherit; font-size: 1rem; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; }
 .rp-sec > .btn { align-self: flex-start; }
+.rp-first { border-top: 0; padding-top: 0; }
+.home-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 0 16px; margin-top: calc(var(--space-inner) - var(--space-section)); border-radius: var(--radius); border: 0; background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; font-size: var(--fs-md); cursor: pointer; box-shadow: 0 1px 2px rgba(51, 27, 63, 0.06); }
+.home-link svg { width: 16px; height: 16px; stroke: var(--muted); }
+.rp-preview { position: relative; max-height: 150px; overflow: hidden; }
+.rp-preview:not(.full)::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: linear-gradient(transparent, var(--bg)); }
+.rp-preview.full { max-height: none; }
+.rp-more { align-self: flex-start; }
+.rp-fold { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0; background: none; border: 0; font: inherit; font-size: var(--fs-md); font-weight: 600; color: var(--ink); cursor: pointer; }
+.rp-fold svg { width: 16px; height: 16px; stroke: var(--muted); transition: transform 0.15s; }
+.rp-fold[aria-expanded="true"] svg { transform: rotate(180deg); }
+.rp-bar { position: sticky; bottom: 0; margin: 4px calc(-1 * max(16px, env(safe-area-inset-left, 0px))) -20px; padding: 12px max(16px, env(safe-area-inset-left, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); }
+.rp-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.rp-row .hint { flex: 1 1 100%; }
+.rp-same { flex-direction: row; align-items: center; flex-wrap: wrap; }
 .rp-scope { align-self: flex-start; height: 40px; }
 .rp-note { width: 100%; font: inherit; font-size: 1rem; line-height: 1.4; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
-.rp-preview { font-size: var(--fs-sm); line-height: 1.5; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; max-height: 320px; overflow-y: auto; overflow-wrap: anywhere; }
+.rp-preview { font-size: var(--fs-sm); line-height: 1.5; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow-wrap: anywhere; }
 .rp-preview b { font-weight: 700; }
 .rp-copy { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .rp-text { width: 100%; font: inherit; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
@@ -680,6 +694,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     absOther: "",
     absSel: [],
     reportNote: null,
+    reportTitle: null,
+    reportCustom: false,
+    reportFull: false,
     subTimePop: false,
     otherPop: null,
     favQ: "",
@@ -890,7 +907,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       }, function () {});
       db.collection("days").onSnapshot(function (snap) {
         var m = {};
-        snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.date) m[x.date] = { absent: x.absent || {}, subs: Array.isArray(x.subs) ? x.subs : [], note: typeof x.note === "string" ? x.note : "" }; });
+        snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.date) m[x.date] = { absent: x.absent || {}, subs: Array.isArray(x.subs) ? x.subs : [], note: typeof x.note === "string" ? x.note : "", title: typeof x.title === "string" ? x.title : "" }; });
         DAY_EDIT = m;
         render();
       }, function () {});
@@ -994,7 +1011,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       '<div class="chips other-hints">' + OTHER_HINTS.map(function (h) { return '<button type="button" class="chip" data-act="otherhint" data-for="' + id + '" data-v="' + h + '">' + h + "</button>"; }).join("") + "</div>";
   }
   function absenceName(w) { var a = ABSENCE.filter(function (x) { return x[0] === w; })[0]; return a ? a[1] : w; }
-  function dayEdit(d) { var r = DAY_EDIT[ymd(d)] || {}; return { absent: r.absent || {}, subs: r.subs || [], note: r.note || "" }; }
+  function dayEdit(d) { var r = DAY_EDIT[ymd(d)] || {}; return { absent: r.absent || {}, subs: r.subs || [], note: r.note || "", title: r.title || "" }; }
   function writeDay(d, rec, quiet) {
     var k = ymd(d);
     DAY_EDIT[k] = rec;
@@ -1005,7 +1022,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       Object.keys(DAY_EDIT).forEach(function (x) { if (x < old) delete DAY_EDIT[x]; });
       lsSet("skift.days", JSON.stringify(DAY_EDIT)); return;
     }
-    dbRef.collection("days").doc("d" + k).set({ date: k, absent: rec.absent, subs: rec.subs, note: rec.note || "" }).then(null, function () {
+    dbRef.collection("days").doc("d" + k).set({ date: k, absent: rec.absent, subs: rec.subs, note: rec.note || "", title: rec.title || "" }).then(null, function () {
       state.reportErr = "Ändringen kunde inte sparas. Försök igen."; render();
     });
   }
@@ -1067,7 +1084,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // Today's staff as text for Teams: who works and when, substitutes, who is away, who opens and closes.
   var REPORT_OPTS = [["times", "Tider"], ["regular", "Ordinarie personal"], ["subs", "Vikarier och förstärkning"], ["absent", "Frånvarande"], ["oc", "Öppning och stängning"], ["depts", "Dela upp per avdelning"]];
   function reportOpts() {
-    var o = { times: true, regular: true, subs: true, absent: true, oc: true, depts: true, scope: "all" };
+    var o = { times: true, regular: true, subs: true, absent: true, oc: true, depts: true, scope: "all", titleBase: "" };
     try { var x = JSON.parse(lsGet("skift.report") || "null"); if (x) Object.keys(o).forEach(function (k) { if (x[k] != null) o[k] = x[k]; }); } catch (e) {}
     return o;
   }
@@ -1078,6 +1095,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function reportHtml(t) {
     return t.split("\n").map(function (l) { return esc(l).replace(/\u0001([^\u0001]*)\u0001/g, "<b>$1</b>"); }).join("<br>");
   }
+  function reportDate(d) { return DAYS[dow(d)].toLowerCase() + " " + d.getDate() + " " + MONTHS_LONG[d.getMonth()]; }
+  function reportTitle(d) { return (reportOpts().titleBase || "Dagsrapport") + " " + reportDate(d); }
   function reportText(me, d, note) {
     var o = reportOpts(), rec = dayEdit(d), dl = deptList(), mine = me ? deptOf(me) : null;
     var inScope = function (dept) { return o.scope !== "mine" || mine == null || dept === mine; };
@@ -1092,7 +1111,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (!inScope(x.dept == null ? null : x.dept)) return;
       rows.push({ name: x.name, s: w ? sh.ranges[0].s : 9999, e: w ? sh.ranges[sh.ranges.length - 1].e : 0, txt: w ? rangeText(sh) : "", dept: x.dept == null ? null : x.dept, sub: true });
     });
-    var out = [BOLD + "Dagsrapport " + DAYS[dow(d)].toLowerCase() + " " + d.getDate() + " " + MONTHS_LONG[d.getMonth()] + BOLD];
+    var title = (state.reportTitle != null ? state.reportTitle : rec.title || "").trim() || reportTitle(d);
+    var out = [BOLD + title + BOLD];
+    // Your own text right under the heading, where it is seen.
+    note = (note != null ? note : rec.note || "").trim();
+    if (note) out.push(note);
     if (o.oc) {
       var timed = rows.filter(function (r) { return r.s < 9999; });
       if (timed.length) {
@@ -1102,13 +1125,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       }
     }
     var shown = rows.filter(function (r) { return r.sub ? o.subs : o.regular; }).sort(function (a, b) { return a.s - b.s || a.name.localeCompare(b.name, "sv"); });
-    var line = function (r) { return r.name + (o.times && r.txt ? " " + r.txt : "") + (r.extra ? " (förstärkning)" : r.sub ? " (vikarie)" : ""); };
-    // Who is away, as "Eva, VAB". Per department they stay in their own department, last.
+    var line = function (r) { return r.name + ((o.times || (r.sub && !r.extra)) && r.txt ? " " + r.txt : "") + (r.extra ? " (förstärkning)" : r.sub ? " (vikarie)" : ""); };
+    // Who is away, as "Eva - VAB". Substitutes of the day always show their hours. Per department they stay in their own department, last.
     var awayRows = o.absent ? Object.keys(rec.absent).map(function (k) {
       var p = DATA.people.filter(function (x) { return keyOf(x) === k; })[0];
       if (!p || !inScope(deptOf(p))) return null;
       var w = absenceName(rec.absent[k]);
-      return { name: p.name, dept: deptOf(p), text: p.name + ", " + (w === "VAB" ? w : w.charAt(0).toLowerCase() + w.slice(1)) };
+      return { name: p.name, dept: deptOf(p), text: p.name + " - " + (w === "VAB" ? w : w.charAt(0).toLowerCase() + w.slice(1)) };
     }).filter(Boolean).sort(function (a, b) { return a.name.localeCompare(b.name, "sv"); }) : [];
     if (o.depts && dl) {
       deptOrder(me, dl).concat([null]).forEach(function (i) {
@@ -1119,9 +1142,6 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (shown.length) out.push("", "På jobbet", shown.map(line).join("\n"));
       if (awayRows.length) out.push("", "Frånvarande", awayRows.map(function (r) { return r.text; }).join("\n"));
     }
-    // Your own text goes last, as written.
-    note = (note != null ? note : rec.note || "").trim();
-    if (note) out.push("", note);
     return out.join("\n");
   }
   // Substitutes used before, newest first: from earlier daily reports and this phone's own list.
@@ -1141,40 +1161,58 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function renderReport(me) {
     var d = addDays(today(), state.peopleOff), rec = dayEdit(d), o = reportOpts(), dl = deptList(), f = state.reportForm;
     var mine = me ? deptOf(me) : null;
+    // Written the same way as in the text: "Eva - sjuk".
     var abs = Object.keys(rec.absent).map(function (k) {
       var p = DATA.people.filter(function (x) { return keyOf(x) === k; })[0]; if (!p) return "";
-      var why = ABSENCE.filter(function (a) { return a[0] === rec.absent[k]; })[0];
-      return '<li><span><strong>' + esc(p.name) + "</strong> " + esc(why ? why[1] : rec.absent[k]) + '</span><button class="icon-btn" data-act="absdel" data-k="' + esc(k) + '" aria-label="Ta bort ' + esc(p.name) + '">' + ICON.close + "</button></li>";
+      var w = absenceName(rec.absent[k]);
+      return '<li><span><strong>' + esc(p.name) + "</strong> - " + esc(w === "VAB" ? w : w.charAt(0).toLowerCase() + w.slice(1)) + '</span><button class="icon-btn" data-act="absdel" data-k="' + esc(k) + '" aria-label="Ta bort ' + esc(p.name) + '">' + ICON.close + "</button></li>";
     }).join("");
     var subs = rec.subs.map(function (x, i) {
       return '<li><span><strong>' + esc(x.name) + "</strong> " + esc(x.time || "") + (dl && x.dept != null && dl[x.dept] ? " · " + esc(dl[x.dept].name) : "") + '</span><button class="icon-btn" data-act="subdel" data-i="' + i + '" aria-label="Ta bort ' + esc(x.name) + '">' + ICON.close + "</button></li>";
     }).join("");
     var fd = f.dept != null ? f.dept : mine;
     var text = reportText(me, d, state.reportNote), canShare = !!navigator.share;
+    var same = (function () {
+      // Absences and substitutes from the day before (Friday on a Monday), when there were any.
+      var pv = ocDayFrom(state.peopleOff - 1, -1), pr = pv == null ? null : dayEdit(addDays(today(), pv));
+      if (!pr) return "";
+      var newAbs = Object.keys(pr.absent).filter(function (k) { return !rec.absent[k]; }).length, have = rec.subs.map(function (x) { return norm(x.name); });
+      var newSubs = pr.subs.filter(function (x) { return have.indexOf(norm(x.name)) < 0; }).length;
+      if (!newAbs && !newSubs) return "";
+      var when = pv === state.peopleOff - 1 ? (state.peopleOff === 0 ? "igår" : "dagen innan") : DAYS[dow(addDays(today(), pv))].toLowerCase();
+      return '<section class="rp-sec rp-same"><button class="btn" data-act="sameprev" data-o="' + pv + '">Hämta från ' + when + "</button>" +
+        '<span class="hint">' + [newAbs ? newAbs + " frånvarande" : "", newSubs ? newSubs + (newSubs === 1 ? " vikarie" : " vikarier") : ""].filter(Boolean).join(" och ") + "</span></section>";
+    })();
+    var past = pastSubs(rec.subs.map(function (x) { return norm(x.name); }));
     return '<div class="sheet-bg' + (state.reportFresh ? " in" : "") + '" data-act="reportclose"></div><div class="sheet report' + (state.reportFresh ? " in" : "") + '" role="dialog" aria-modal="true" aria-labelledby="report-title"><div class="wrap sheet-in">' +
       '<div class="sheet-head"><div style="min-width:0"><h3 id="report-title">Dagsrapport</h3><div class="sub">' + DAYS[dow(d)] + " " + shortDate(d) + '</div></div><button class="icon-btn" data-act="reportclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
       (state.reportErr ? '<div class="msg err" role="alert">' + esc(state.reportErr) + "</div>" : "") +
+      '<section class="rp-sec rp-first"><h4>Rubrik</h4><input id="report-head" class="other-in" type="text" maxlength="80" value="' + esc(state.reportTitle != null ? state.reportTitle : rec.title || reportTitle(d)) + '" autocomplete="off" aria-label="Rubrik"></section>' +
+      '<section class="rp-sec"><h4>Övrigt</h4><textarea id="report-note" class="rp-note" rows="2" maxlength="1000" placeholder="Till exempel utflykt, besök eller annat som kollegorna behöver veta">' + esc(state.reportNote != null ? state.reportNote : rec.note) + '</textarea><span class="hint">Kommer direkt under rubriken.</span></section>' +
+      same +
       '<section class="rp-sec"><h4>Frånvaro</h4>' + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn" data-act="absadd">Lägg till frånvaro</button></section>' +
       '<section class="rp-sec"><h4>Vikarier idag</h4>' + (subs ? '<ul class="rp-list">' + subs + "</ul>" : "") +
         '<div class="rp-form"><input id="sub-name" type="text" placeholder="Namn" autocomplete="off" value="' + esc(f.name || "") + '" aria-label="Vikariens namn">' +
         '<button class="time-btn sub-time" data-act="subtimeopen" aria-haspopup="dialog"><span class="tp-v">' + (f.s != null ? hhmm(f.s) + "–" + hhmm(f.e) : "Välj tid") + "</span>" + ICON.down + "</button></div>" +
-        (function () {
-          var past = pastSubs(rec.subs.map(function (x) { return norm(x.name); }));
-          return past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><div class="chips">' + past.map(function (x) {
-            return '<button class="chip" data-act="subpast" data-n="' + esc(x.name) + '" data-t="' + esc(x.time || "") + '" data-d="' + (x.dept == null ? "" : x.dept) + '">' + esc(x.name) + "</button>";
-          }).join("") + "</div></div>" : "";
-        })() +
+        (past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><div class="chips">' + past.map(function (x) {
+          return '<button class="chip" data-act="subpast" data-n="' + esc(x.name) + '" data-t="' + esc(x.time || "") + '" data-d="' + (x.dept == null ? "" : x.dept) + '">' + esc(x.name) + "</button>";
+        }).join("") + "</div></div>" : "") +
         (dl ? '<div class="chips rp-depts" role="group" aria-label="Avdelning">' + dl.map(function (x, i) { return '<button class="chip" data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "") +
         '<button class="btn" data-act="subadd">Lägg till vikarie</button></section>' +
-      '<section class="rp-sec"><h4>Övrigt</h4><textarea id="report-note" class="rp-note" rows="3" maxlength="1000" placeholder="Till exempel utflykt, besök eller annat som kollegorna behöver veta">' + esc(state.reportNote != null ? state.reportNote : rec.note) + "</textarea></section>" +
-      '<section class="rp-sec"><h4>Visa i texten</h4><ul class="check-list">' + REPORT_OPTS.map(function (x) {
-        if (x[0] === "depts" && !dl) return "";
-        return '<li><button data-act="ropt" data-k="' + x[0] + '" aria-pressed="' + !!o[x[0]] + '"><span>' + x[1] + "</span>" + ICON.check + "</button></li>";
-      }).join("") + "</ul>" +
-        (dl && mine != null ? '<div class="mini-seg rp-scope" role="group" aria-label="Vilka"><button data-act="rscope" data-s="all" aria-pressed="' + (o.scope !== "mine") + '">Hela förskolan</button><button data-act="rscope" data-s="mine" aria-pressed="' + (o.scope === "mine") + '">' + esc(dl[mine].name) + "</button></div>" : "") + "</section>" +
-      '<section class="rp-sec"><h4>Text</h4><div class="rp-preview" id="report-preview">' + reportHtml(text) + "</div>" +
-        '<textarea id="report-text" class="rp-copy" readonly tabindex="-1" aria-hidden="true">' + esc(reportPlain(text)) + "</textarea>" +
-        '<div class="pop-btns"><button class="btn' + (canShare ? "" : " primary") + '" data-act="rcopy">' + (state.reportCopied ? "Kopierad" : "Kopiera text") + "</button>" + (canShare ? '<button class="btn primary" data-act="rshare">Dela</button>' : "") + "</div></section>" +
+      // Choices made once and then left: folded away.
+      '<section class="rp-sec"><button class="rp-fold" data-act="rcustom" aria-expanded="' + !!state.reportCustom + '"><span>Anpassa texten</span>' + ICON.down + "</button>" +
+      (state.reportCustom ? '<ul class="check-list">' + REPORT_OPTS.map(function (x) {
+          if (x[0] === "depts" && !dl) return "";
+          return '<li><button data-act="ropt" data-k="' + x[0] + '" aria-pressed="' + !!o[x[0]] + '"><span>' + x[1] + "</span>" + ICON.check + "</button></li>";
+        }).join("") + "</ul>" +
+        (dl && mine != null ? '<div class="mini-seg rp-scope" role="group" aria-label="Vilka"><button data-act="rscope" data-s="all" aria-pressed="' + (o.scope !== "mine") + '">Hela förskolan</button><button data-act="rscope" data-s="mine" aria-pressed="' + (o.scope === "mine") + '">' + esc(dl[mine].name) + "</button></div>" : "") +
+        '<div class="rp-row"><span class="hint">' + (o.titleBase ? "Rubrik varje dag: " + esc(o.titleBase) + " och datum" : "Rubrik varje dag: Dagsrapport och datum") + "</span>" +
+        '<button class="text-btn" data-act="titlesave">Använd rubriken ovan varje dag</button>' + (o.titleBase ? '<button class="text-btn" data-act="titlereset">Återställ</button>' : "") + "</div>" : "") + "</section>" +
+      // The finished text last, and the copy button always in reach at the bottom.
+      '<section class="rp-sec"><h4>Färdig text</h4><div class="rp-preview' + (state.reportFull ? " full" : "") + '" id="report-preview">' + reportHtml(text) + "</div>" +
+        '<button class="text-btn rp-more" data-act="rfull">' + (state.reportFull ? "Visa mindre" : "Visa hela") + "</button>" +
+        '<textarea id="report-text" class="rp-copy" readonly tabindex="-1" aria-hidden="true">' + esc(reportPlain(text)) + "</textarea></section>" +
+      '<div class="rp-bar pop-btns"><button class="btn' + (canShare ? "" : " primary") + '" data-act="rcopy">' + (state.reportCopied ? "Kopierad" : "Kopiera text") + "</button>" + (canShare ? '<button class="btn primary" data-act="rshare">Dela</button>' : "") + "</div>" +
       "</div></div>";
   }
   // Choosing who is away: the reason first, then the name.
@@ -1665,6 +1703,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var t = today();
     var out = '<div class="view">' + exampleNote();
     if (!noCard) out += '<section class="today" aria-label="Idag">' + todayCard(me, false) + "</section>";
+    // In the morning: a way straight to today's report.
+    if (nowMinutes() < 12 * 60 && openClose(t)) out += '<button class="home-link" data-act="reportgo"><span>Dagsrapport för idag</span>' + ICON.right + "</button>";
     out += openCloseHtml(me);
 
     out += '<div class="home-card">' + weekBlock(me, state.weekOffset, "week", false) + "</div>";
@@ -2903,10 +2943,14 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // ---------- Events ----------
   // The note is saved when you leave the field, so typing is not interrupted.
   app.addEventListener("change", function (e) {
-    if (e.target.id !== "report-note") return;
-    var nd = addDays(today(), state.peopleOff), cur = dayEdit(nd), v = e.target.value.slice(0, 1000);
-    if (v === cur.note) return;
-    writeDay(nd, { absent: cur.absent, subs: cur.subs, note: v }, true);
+    var id = e.target.id;
+    if (id !== "report-note" && id !== "report-head") return;
+    var nd = addDays(today(), state.peopleOff), cur = dayEdit(nd), v = e.target.value.slice(0, id === "report-note" ? 1000 : 80);
+    var rec2 = { absent: cur.absent, subs: cur.subs, note: cur.note, title: cur.title };
+    if (id === "report-note") rec2.note = v;
+    else rec2.title = v.trim() === reportTitle(nd) ? "" : v.trim();
+    if (rec2.note === cur.note && rec2.title === cur.title) return;
+    writeDay(nd, rec2, true);
   });
   app.addEventListener("submit", function (e) {
     if (e.target.matches && e.target.matches("[data-form=other]")) {
@@ -2914,7 +2958,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       var ov = document.getElementById("other-text").value.trim().slice(0, 40), op = personByName(state.otherPop);
       state.otherPop = null;
       if (!op || !ov) { render(); return; }
-      var od = addDays(today(), state.view === "grid" ? state.peopleOff : 0), orec = dayEdit(od), onr = { absent: Object.assign({}, orec.absent), subs: orec.subs.slice(), note: orec.note };
+      var od = addDays(today(), state.view === "grid" ? state.peopleOff : 0), orec = dayEdit(od), onr = { absent: Object.assign({}, orec.absent), subs: orec.subs.slice(), note: orec.note, title: orec.title };
       onr.absent[keyOf(op)] = ov; writeDay(od, onr);
       return;
     }
@@ -2958,7 +3002,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       var wl = b.parentNode, wi = Array.prototype.indexOf.call(wl.children, b);
       wl.scrollTo({ top: wi * WHEEL_ROW, behavior: reduceMotion ? "auto" : "smooth" });
     }
-    else if (act === "reportopen") { state.reportNote = null; state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); }
+    else if (act === "reportgo") { state.view = "grid"; lsSet("skift.view", "grid"); state.peopleOff = 0; state.reportNote = null; state.reportTitle = null; state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); window.scrollTo(0, 0); }
+    else if (act === "reportopen") { state.reportNote = null; state.reportTitle = null; state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); }
     else if (act === "reportclose") { state.report = false; state.absPop = false; render(); }
     else if (act === "abspick") {
       var ak = b.getAttribute("data-k"), ai = state.absSel.indexOf(ak);
@@ -2975,13 +3020,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (oin) { oin.value = b.getAttribute("data-v"); if (oin.id === "abs-other") state.absOther = oin.value; oin.focus(); }
     }
     else if (act === "pabsent" && state.person) {
-      var pp = personByName(state.person.name), pd = addDays(today(), state.view === "grid" ? state.peopleOff : 0), pr = dayEdit(pd), pn = { absent: Object.assign({}, pr.absent), subs: pr.subs.slice(), note: pr.note }, pw = b.getAttribute("data-w");
+      var pp = personByName(state.person.name), pd = addDays(today(), state.view === "grid" ? state.peopleOff : 0), pr = dayEdit(pd), pn = { absent: Object.assign({}, pr.absent), subs: pr.subs.slice(), note: pr.note, title: pr.title }, pw = b.getAttribute("data-w");
       if (!pp) return;
       if (pw) pn.absent[keyOf(pp)] = pw; else delete pn.absent[keyOf(pp)];
       writeDay(pd, pn);
     }
     else if (act === "absset" || act === "absdel" || act === "subadd" || act === "subdel") {
-      var rd = addDays(today(), state.peopleOff), rr = dayEdit(rd), nr = { absent: Object.assign({}, rr.absent), subs: rr.subs.slice(), note: rr.note };
+      var rd = addDays(today(), state.peopleOff), rr = dayEdit(rd), nr = { absent: Object.assign({}, rr.absent), subs: rr.subs.slice(), note: rr.note, title: rr.title };
       if (act === "absset") {
         var aw = state.absWhy || "sjuk";
         if (aw === "annat") { aw = (state.absOther || "").trim().slice(0, 40); if (!aw) { var ao = document.getElementById("abs-other"); if (ao) ao.focus(); return; } }
@@ -3016,6 +3061,26 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       state.reportForm.s = ts; state.reportForm.e = te; state.subTimePop = false; buzz(); render();
     }
     else if (act === "subdept") { state.reportForm.dept = +b.getAttribute("data-i"); render(); }
+    else if (act === "rcustom") { state.reportCustom = !state.reportCustom; render(); }
+    else if (act === "rfull") { state.reportFull = !state.reportFull; render(); }
+    else if (act === "titlesave" || act === "titlereset") {
+      var td = addDays(today(), state.peopleOff), hv = document.getElementById("report-head"), base = "";
+      if (act === "titlesave" && hv) {
+        // The date at the end is added each day, so it is not part of what is saved.
+        base = hv.value.trim();
+        var suf = reportDate(td);
+        if (base.toLowerCase().slice(-suf.length) === suf) base = base.slice(0, -suf.length).trim();
+      }
+      var to = reportOpts(); to.titleBase = base.slice(0, 60); lsSet("skift.report", JSON.stringify(to));
+      var tr = dayEdit(td); state.reportTitle = null; state.reportCopied = false;
+      writeDay(td, { absent: tr.absent, subs: tr.subs, note: tr.note, title: "" });
+    }
+    else if (act === "sameprev") {
+      var sd = addDays(today(), state.peopleOff), sc = dayEdit(sd), sp = dayEdit(addDays(today(), +b.getAttribute("data-o")));
+      var sn = { absent: Object.assign({}, sp.absent, sc.absent), subs: sc.subs.slice(), note: sc.note, title: sc.title }, sh = sc.subs.map(function (x) { return norm(x.name); });
+      sp.subs.forEach(function (x) { if (sh.indexOf(norm(x.name)) < 0) sn.subs.push(x); });
+      state.reportCopied = false; writeDay(sd, sn);
+    }
     else if (act === "ropt" || act === "rscope") {
       var ro = reportOpts();
       if (act === "ropt") ro[b.getAttribute("data-k")] = !ro[b.getAttribute("data-k")]; else ro.scope = b.getAttribute("data-s");
@@ -3085,8 +3150,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
   app.addEventListener("input", function (e) {
     if (e.target.id === "pick-q") { state.pickQ = e.target.value; filterPicker(state.pickQ); return; }
-    if (e.target.id === "report-note") {
-      state.reportNote = e.target.value; state.reportCopied = false;
+    if (e.target.id === "report-note" || e.target.id === "report-head") {
+      if (e.target.id === "report-note") state.reportNote = e.target.value; else state.reportTitle = e.target.value;
+      state.reportCopied = false;
       var rt = document.getElementById("report-text");
       var rtx = reportText(personByName(state.profile), addDays(today(), state.peopleOff), state.reportNote), rpv = document.getElementById("report-preview");
       if (rt) rt.value = reportPlain(rtx);
