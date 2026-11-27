@@ -469,13 +469,15 @@ html.lock { overflow: hidden; }
 .rp-first { border-top: 0; padding-top: 0; }
 .home-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 0 16px; margin-top: calc(var(--space-inner) - var(--space-section)); border-radius: var(--radius); border: 0; background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; font-size: var(--fs-md); cursor: pointer; box-shadow: 0 1px 2px rgba(51, 27, 63, 0.06); }
 .home-link svg { width: 16px; height: 16px; stroke: var(--muted); }
-.rp-preview { position: relative; max-height: 150px; overflow: hidden; }
-.rp-preview:not(.full)::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: linear-gradient(transparent, var(--bg)); }
-.rp-preview.full { max-height: none; }
 .rp-more { align-self: flex-start; }
 .rp-edit { width: 100%; font: inherit; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
 .rp-fold { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0; background: none; border: 0; font: inherit; font-size: var(--fs-md); font-weight: 600; color: var(--ink); cursor: pointer; }
-.rp-fold svg { width: 16px; height: 16px; stroke: var(--muted); transition: transform 0.15s; }
+.rp-fold svg { width: 16px; height: 16px; stroke: var(--muted); transition: transform 0.15s; flex: none; }
+.rp-fold > span:first-child { flex: none; }
+.rp-sum { flex: 1; min-width: 0; margin: 0 8px 0 12px; text-align: right; font-weight: 400; font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-body { display: flex; flex-direction: column; gap: 8px; padding-bottom: 6px; }
+.rp-body > .btn, .rp-body > .rp-same { align-self: flex-start; }
+.rp-sec:has(> .rp-fold) { gap: 4px; padding-top: 4px; }
 .rp-fold[aria-expanded="true"] svg { transform: rotate(180deg); }
 .rp-bar { position: sticky; bottom: 0; margin: 4px calc(-1 * max(16px, env(safe-area-inset-left, 0px))) -20px; padding: 12px max(16px, env(safe-area-inset-left, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); }
 .rp-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
@@ -739,9 +741,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     absSel: [],
     reportNote: null,
     reportTitle: null,
-    reportCustom: false,
+    rpOpen: {},
     reportText: null,
-    reportFull: false,
     subTimePop: false,
     otherPop: null,
     favQ: "",
@@ -1140,10 +1141,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
   // ---------- Daily report ----------
   // Today's staff as text for Teams: who works and when, substitutes, who is away, who opens and closes.
-  var REPORT_OPTS = [["times", "Tider"], ["regular", "Ordinarie personal"], ["subs", "Vikarier och förstärkning"], ["absent", "Frånvarande"], ["oc", "Öppning och stängning"], ["depts", "Dela upp per avdelning"]];
+  var REPORT_OPTS = [["times", "Tider"], ["regular", "Ordinarie personal"], ["subs", "Vikarier och förstärkning"], ["absent", "Frånvarande"], ["open", "Öppning"], ["close", "Stängning"], ["depts", "Dela upp per avdelning"]];
   function reportOpts() {
-    var o = { times: true, regular: true, subs: true, absent: true, oc: true, depts: true, scope: "all", titleBase: "" };
-    try { var x = JSON.parse(lsGet("skift.report") || "null"); if (x) Object.keys(o).forEach(function (k) { if (x[k] != null) o[k] = x[k]; }); } catch (e) {}
+    var o = { times: true, regular: true, subs: true, absent: true, open: true, close: true, depts: true, scope: "all", titleBase: "" };
+    try {
+      var x = JSON.parse(lsGet("skift.report") || "null");
+      if (x) { if (x.oc != null && x.open == null) { x.open = x.close = x.oc; } Object.keys(o).forEach(function (k) { if (x[k] != null) o[k] = x[k]; }); }
+    } catch (e) {}
     return o;
   }
   // Department names are bold when the report is pasted into Teams. The text carries a marker
@@ -1176,17 +1180,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     });
     var title = (state.reportTitle != null ? state.reportTitle : rec.title || "").trim() || reportTitle(d);
     var out = [BOLD + title + BOLD];
-    // Your own text right under the heading, where it is seen.
-    note = (note != null ? note : rec.note || "").trim();
-    if (note) out.push(note);
-    if (o.oc) {
-      var timed = rows.filter(function (r) { return r.s < 9999; });
-      if (timed.length) {
-        var lo = Math.min.apply(null, timed.map(function (r) { return r.s; })), hi = Math.max.apply(null, timed.map(function (r) { return r.e; }));
-        var names = function (f) { return timed.filter(f).map(function (r) { return r.name; }).join(", "); };
-        var closing = lastOut(timed, closersN()).map(function (r) { return r.name; }).join(", ");
-        out.push("", "Öppnar: " + names(function (r) { return r.s === lo; }), "Stänger: " + closing);
-      }
+    var timed = rows.filter(function (r) { return r.s < 9999; });
+    if ((o.open || o.close) && timed.length) {
+      var lo = Math.min.apply(null, timed.map(function (r) { return r.s; }));
+      out.push("");
+      if (o.open) out.push("Öppnar: " + timed.filter(function (r) { return r.s === lo; }).map(function (r) { return r.name; }).join(", "));
+      if (o.close) out.push("Stänger: " + lastOut(timed, closersN()).map(function (r) { return r.name; }).join(", "));
     }
     var shown = rows.filter(function (r) { return r.sub ? o.subs : o.regular; }).sort(function (a, b) { return a.s - b.s || a.name.localeCompare(b.name, "sv"); });
     var line = function (r) { return r.name + ((o.times || (r.sub && !r.extra)) && r.txt ? " " + r.txt : "") + (r.extra ? " (förstärkning)" : r.sub ? " (vikarie)" : ""); };
@@ -1206,6 +1205,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (shown.length) out.push("", "På jobbet", shown.map(line).join("\n"));
       if (awayRows.length) out.push("", "Frånvarande", awayRows.map(function (r) { return r.text; }).join("\n"));
     }
+    // Your own text last.
+    note = (note != null ? note : rec.note || "").trim();
+    if (note) out.push("", note);
     return out.join("\n");
   }
   // Substitutes used before, newest first: from earlier daily reports and this phone's own list.
@@ -1248,31 +1250,39 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         '<span class="hint">' + [newAbs ? newAbs + " frånvarande" : "", newSubs ? newSubs + (newSubs === 1 ? " vikarie" : " vikarier") : ""].filter(Boolean).join(" och ") + "</span></section>";
     })();
     var past = pastSubs(rec.subs.map(function (x) { return norm(x.name); }));
-    return '<div class="sheet-bg' + (state.reportFresh ? " in" : "") + '" data-act="reportclose"></div><div class="sheet report' + (state.reportFresh ? " in" : "") + '" role="dialog" aria-modal="true" aria-labelledby="report-title"><div class="wrap sheet-in">' +
+    var nAbs = Object.keys(rec.absent).length;
+    function fold(k, title, sum, body, first) {
+      var open = !!state.rpOpen[k];
+      return '<section class="rp-sec' + (first ? " rp-first" : "") + '"><button class="rp-fold" data-act="rfold" data-k="' + k + '" aria-expanded="' + open + '"><span>' + title + '</span><span class="rp-sum">' + esc(sum) + "</span>" + ICON.down + "</button>" +
+        (open ? '<div class="rp-body">' + body + "</div>" : "") + "</section>";
+    }
+    return '<div class="sheet-bg' + (state.reportFresh ? " in" : "") + '" data-act="reportclose"></div><div class="sheet report' + (state.reportFresh ? " in" : "") + '" role="dialog" aria-modal="true" aria-labelledby="report-title"><div class="sheet-grab" aria-hidden="true"><span></span></div><div class="wrap sheet-in">' +
       '<div class="sheet-head"><div style="min-width:0"><h3 id="report-title">Dagsrapport</h3><div class="sub">' + DAYS[dow(d)] + " " + shortDate(d) + '</div></div><button class="icon-btn" data-act="reportclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
       (state.reportErr ? '<div class="msg err" role="alert">' + esc(state.reportErr) + "</div>" : "") +
-      '<section class="rp-sec rp-first"><h4>Rubrik</h4><input id="report-head" class="other-in" type="text" maxlength="80" value="' + esc(state.reportTitle != null ? state.reportTitle : rec.title || reportTitle(d)) + '" autocomplete="off" aria-label="Rubrik"></section>' +
-      '<section class="rp-sec"><h4>Övrigt</h4><textarea id="report-note" class="rp-note" rows="2" maxlength="1000" placeholder="Till exempel utflykt, besök eller annat som kollegorna behöver veta">' + esc(state.reportNote != null ? state.reportNote : rec.note) + '</textarea><span class="hint">Kommer direkt under rubriken.</span></section>' +
-      same +
-      '<section class="rp-sec"><h4>Frånvaro</h4>' + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn" data-act="absadd">Lägg till frånvaro</button></section>' +
-      '<section class="rp-sec"><h4>Vikarier idag</h4>' + (subs ? '<ul class="rp-list">' + subs + "</ul>" : "") +
-        // Substitutes from before as plain rows (name, hours and department last time); a tap fills in the form.
+      // Everything that can be changed sits in folds that open one at a time; only the finished text is always shown.
+      fold("head", "Rubrik", state.reportTitle != null ? state.reportTitle : rec.title || reportTitle(d),
+        '<input id="report-head" class="other-in" type="text" maxlength="80" value="' + esc(state.reportTitle != null ? state.reportTitle : rec.title || reportTitle(d)) + '" autocomplete="off" aria-label="Rubrik">', true) +
+      fold("abs", "Frånvaro", nAbs ? nAbs + (nAbs === 1 ? " person" : " personer") : "Ingen",
+        same + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn" data-act="absadd">Lägg till frånvaro</button>') +
+      fold("subs", "Vikarier idag", rec.subs.length ? rec.subs.length + (rec.subs.length === 1 ? " vikarie" : " vikarier") : "Inga",
+        (subs ? '<ul class="rp-list">' + subs + "</ul>" : "") +
         (past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><ul class="check-list rp-pastlist">' + past.slice(0, 6).map(function (x) {
           return '<li><button data-act="subpast" data-n="' + esc(x.name) + '" aria-pressed="' + (norm(f.name || "") === norm(x.name)) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>";
         }).join("") + "</ul></div>" : "") +
         '<div class="rp-form"><input id="sub-name" type="text" placeholder="Namn" autocomplete="off" value="' + esc(f.name || "") + '" aria-label="Vikariens namn">' +
         '<button class="time-btn sub-time" data-act="subtimeopen" aria-haspopup="dialog"><span class="tp-v">' + (f.s != null ? hhmm(f.s) + "–" + hhmm(f.e) : "Välj tid") + "</span>" + ICON.down + "</button></div>" +
         (dl ? '<div class="mini-seg rp-deptseg" role="group" aria-label="Avdelning">' + dl.map(function (x, i) { return '<button data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "") +
-        '<button class="btn" data-act="subadd">Lägg till vikarie</button></section>' +
-      // Choices made once and then left: folded away.
-      '<section class="rp-sec"><button class="rp-fold" data-act="rcustom" aria-expanded="' + !!state.reportCustom + '"><span>Anpassa texten</span>' + ICON.down + "</button>" +
-      (state.reportCustom ? '<ul class="check-list">' + REPORT_OPTS.map(function (x) {
+        '<button class="btn" data-act="subadd">Lägg till vikarie</button>') +
+      fold("note", "Övrigt", (state.reportNote != null ? state.reportNote : rec.note).trim().split("\n")[0] || "Inget",
+        '<textarea id="report-note" class="rp-note" rows="3" maxlength="1000" placeholder="Till exempel utflykt, besök eller annat som kollegorna behöver veta">' + esc(state.reportNote != null ? state.reportNote : rec.note) + '</textarea><span class="hint">Kommer sist i texten.</span>') +
+      fold("custom", "Anpassa texten", "",
+        '<ul class="check-list">' + REPORT_OPTS.map(function (x) {
           if (x[0] === "depts" && !dl) return "";
           return '<li><button data-act="ropt" data-k="' + x[0] + '" aria-pressed="' + !!o[x[0]] + '"><span>' + x[1] + "</span>" + ICON.check + "</button></li>";
         }).join("") + "</ul>" +
         (dl && mine != null ? '<div class="mini-seg rp-scope" role="group" aria-label="Vilka"><button data-act="rscope" data-s="all" aria-pressed="' + (o.scope !== "mine") + '">Hela förskolan</button><button data-act="rscope" data-s="mine" aria-pressed="' + (o.scope === "mine") + '">' + esc(dl[mine].name) + "</button></div>" : "") +
         '<div class="rp-row"><span class="hint">' + (o.titleBase ? "Rubrik varje dag: " + esc(o.titleBase) + " och datum" : "Rubrik varje dag: Dagsrapport och datum") + "</span>" +
-        '<button class="text-btn" data-act="titlesave">Använd rubriken ovan varje dag</button>' + (o.titleBase ? '<button class="text-btn" data-act="titlereset">Återställ</button>' : "") + "</div>" : "") + "</section>" +
+        '<button class="text-btn" data-act="titlesave">Använd rubriken varje dag</button>' + (o.titleBase ? '<button class="text-btn" data-act="titlereset">Återställ</button>' : "") + "</div>") +
       // The finished text last, and the copy button always in reach at the bottom.
       (rec.text ?
         // Edited by hand: this text is what is sent, and the choices above no longer change it.
@@ -1281,8 +1291,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           '<button class="text-btn rp-more" data-act="rtextreset">Återställ till automatisk text</button>' +
           '<div id="report-preview" hidden>' + customHtml(state.reportText != null ? state.reportText : rec.text) + "</div>" +
           '<textarea id="report-text" class="rp-copy" readonly tabindex="-1" aria-hidden="true">' + esc(state.reportText != null ? state.reportText : rec.text) + "</textarea></section>"
-      : '<section class="rp-sec"><h4>Färdig text</h4><div class="rp-preview' + (state.reportFull ? " full" : "") + '" id="report-preview">' + reportHtml(text) + "</div>" +
-        '<div class="rp-row"><button class="text-btn" data-act="rfull">' + (state.reportFull ? "Visa mindre" : "Visa hela") + '</button><button class="text-btn" data-act="rtextedit">Redigera texten</button></div>' +
+      : '<section class="rp-sec"><h4>Färdig text</h4><div class="rp-preview" id="report-preview">' + reportHtml(text) + "</div>" +
+        '<div class="rp-row"><button class="text-btn" data-act="rtextedit">Redigera texten</button></div>' +
         '<textarea id="report-text" class="rp-copy" readonly tabindex="-1" aria-hidden="true">' + esc(reportPlain(text)) + "</textarea></section>") +
       '<div class="rp-bar pop-btns"><button class="btn' + (canShare ? "" : " primary") + '" data-act="rcopy">' + (state.reportCopied ? "Kopierad" : "Kopiera text") + "</button>" + (canShare ? '<button class="btn primary" data-act="rshare">Dela</button>' : "") + "</div>" +
       "</div></div>";
@@ -2939,8 +2949,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function stepPersonWeek(n) { if (!state.person) return; state.person.week += n; slideDir = n; render(); buzz(); }
   // Closes the top sheet. An editor opened from a colleague's sheet goes back to that sheet.
   function closeSheet() {
-    if ((!state.edit && !state.person) || closing) return;
-    function done() { closing = false; if (state.edit) state.edit = null; else state.person = null; render(); }
+    if ((!state.edit && !state.person && !state.report) || closing) return;
+    function done() { closing = false; if (state.edit) state.edit = null; else if (state.person) state.person = null; else { state.report = false; state.absPop = false; } render(); }
     var sh = app.querySelector(".sheet"), bg = app.querySelector(".sheet-bg");
     if (reduceMotion || !sh || (state.edit && state.edit.back && state.person)) { done(); return; }
     closing = true;
@@ -3061,6 +3071,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var sh = e.target.closest(".sheet"); drag = null;
     if (!sh || closing) return;
     if (sh.scrollTop > 0 && !e.target.closest(".sheet-grab")) return;
+    if (e.target.closest("input, textarea, .wheel")) return;
     drag = { sh: sh, bg: app.querySelector(".sheet-bg"), x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), dy: 0 };
   }, { passive: true });
   app.addEventListener("touchmove", function (e) {
@@ -3216,19 +3227,18 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       state.reportForm.s = ts; state.reportForm.e = te; state.subTimePop = false; buzz(); render();
     }
     else if (act === "subdept") { state.reportForm.dept = +b.getAttribute("data-i"); render(); }
-    else if (act === "rcustom") { state.reportCustom = !state.reportCustom; render(); }
+    else if (act === "rfold") { var fk = b.getAttribute("data-k"); state.rpOpen[fk] = !state.rpOpen[fk]; render(); }
     else if (act === "rtextedit" || act === "rtextreset") {
       var ed = addDays(today(), state.peopleOff);
       state.reportText = null; state.reportCopied = false;
       writeDay(ed, { text: act === "rtextedit" ? reportPlain(reportText(personByName(state.profile), ed, state.reportNote)) : "" });
       if (act === "rtextedit") { var ce = document.getElementById("report-custom"); if (ce) ce.focus(); }
     }
-    else if (act === "rfull") { state.reportFull = !state.reportFull; render(); }
     else if (act === "titlesave" || act === "titlereset") {
       var td = addDays(today(), state.peopleOff), hv = document.getElementById("report-head"), base = "";
-      if (act === "titlesave" && hv) {
+      if (act === "titlesave") {
         // The date at the end is added each day, so it is not part of what is saved.
-        base = hv.value.trim();
+        base = (hv ? hv.value : state.reportTitle != null ? state.reportTitle : dayEdit(td).title || reportTitle(td)).trim();
         var suf = reportDate(td);
         if (base.toLowerCase().slice(-suf.length) === suf) base = base.slice(0, -suf.length).trim();
       }
