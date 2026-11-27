@@ -218,7 +218,7 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 /* Settings */
 .panel { border-top: 1px solid var(--line); padding: 16px 0 4px; display: flex; flex-direction: column; gap: 10px; }
 .panel h3 { margin: 0; font-size: var(--fs-md); font-weight: 600; }
-.pend-h { margin: 10px 0 0; font-size: var(--fs-md); font-weight: 600; }
+.pend-h { margin: 14px 0 0; font-size: var(--fs-md); font-weight: 600; }
 .panel p { margin: 0; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: var(--fs-sm); }
 .kv dt { color: var(--muted); }
@@ -238,7 +238,9 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .msg { border-radius: 10px; padding: 10px 12px; font-size: var(--fs-sm); }
 .msg.ok { background: var(--live-soft); color: var(--live); }
 .msg.err { background: var(--warn-soft); color: var(--warn); }
-.preview-names { display: flex; flex-wrap: wrap; gap: 6px; }
+.pend-sum { margin: 0; }
+.pend-note { margin: 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.pend-note + .pend-note { border-top: 0; padding-top: 4px; }
 .help summary { font-weight: 600; cursor: pointer; padding-bottom: 6px; }
 .help ol { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-sm); }
 .help code { font-size: 0.85em; background: var(--bar-off); padding: 1px 5px; border-radius: 4px; }
@@ -1998,16 +2000,22 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (usingLocal && EMBEDDED.people.length && !state.pending) out += '<p class="hint">Det här schemat är bara sparat på den här enheten.</p><div class="btn-row"><button class="btn" data-act="droplocal">Använd det delade schemat</button></div>';
       if (state.pending) {
         var p = state.pending;
-        var info = state.pendingInfo || {}, layout = { grid: "dagarna som kolumner", rows: "dagarna som rader", list: "en rad per pass" }[info.kind];
-        out += '<div class="msg ok">Hittade ' + p.people.length + (p.people.length === 1 ? " person och " : " personer och ") + p.weeks + (p.weeks === 1 ? " vecka i " : " veckor i ") + esc(p.source) + (layout ? ", med " + layout : "") + ".</div>" +
-          '<div class="preview-names">' + p.people.map(function (x) { return '<span class="chip">' + esc(x.name) + "</span>"; }).join("") + "</div>" +
-          (info.notes && info.notes.length ? '<p class="hint">Text som inte är tider visas som den står: ' + info.notes.slice(0, 6).map(esc).join(", ") + (info.notes.length > 6 ? " med flera" : "") + ".</p>" : "") +
+        var info = state.pendingInfo || {};
+        // Only the names that differ from the schedule in use are worth reading through.
+        var oldKeys = DATA.people.map(keyOf), newNames = p.people.map(function (x) { return x.name; });
+        var added = DATA.people.length ? newNames.filter(function (n) { return oldKeys.indexOf(n) < 0; }) : [];
+        var gone = DATA.people.filter(function (x) { return newNames.indexOf(keyOf(x)) < 0; }).map(function (x) { return x.name; });
+        var nameList = function (l) { return l.slice().sort(function (x, y) { return x.localeCompare(y, "sv"); }).map(esc).join(", "); };
+        out += '<p class="pend-sum">' + p.people.length + (p.people.length === 1 ? " person och " : " personer och ") + p.weeks + (p.weeks === 1 ? " vecka i " : " veckor i ") + esc(p.source) + ".</p>" +
           '<h3 class="pend-h">Vilken schemavecka är det nu?</h3><p class="hint">Vecka ' + isoWeek(today()) + " (" + weekRange(mondayOf(today())) + ").</p>" +
           '<div class="seg-ctl" role="group" aria-label="Schemavecka nu">' + (function () {
             var cw = rotOf(p, today()), b = "";
             for (var w = 0; w < p.weeks; w++) b += '<button data-act="pendweek" data-w="' + w + '" aria-pressed="' + (w === cw) + '">' + (w + 1) + "</button>";
             return b;
           })() + "</div>" +
+          (added.length ? '<p class="hint pend-note">Nya jämfört med nuvarande schema: ' + nameList(added) + ".</p>" : "") +
+          (gone.length ? '<p class="hint pend-note">Finns inte i den nya filen: ' + nameList(gone) + ".</p>" : "") +
+          (info.notes && info.notes.length ? '<p class="hint pend-note">Text som inte är tider visas som den står: ' + info.notes.slice(0, 6).map(esc).join(", ") + (info.notes.length > 6 ? " med flera" : "") + ".</p>" : "") +
           '<div class="btn-row"><button class="btn primary" data-act="save"' + (state.saving ? " disabled" : "") + ">" + (state.saving ? "Sparar..." : "Spara schemat") + '</button><button class="btn" data-act="cancel">Avbryt</button></div>';
       } else {
         out += '<div class="drop" id="drop"><span>Excel-fil (.xlsx) eller CSV</span><span class="btn primary" aria-hidden="true">Ladda upp schema</span>' +
@@ -2710,7 +2718,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         var parsed = parseWorkbook(wb, file.name);
         if (!parsed) state.msg = { ok: false, text: "Hittade inget schema i " + file.name + ". Filen behöver en rubrikrad med veckodagar (Mån, Tis, Ons ...) och namnen i en egen kolumn. Se exemplet längre ner." };
         else {
-          state.pendingInfo = { kind: parsed.kind, notes: unreadNotes(parsed) };
+          state.pendingInfo = { notes: unreadNotes(parsed) };
           delete parsed.kind;
           state.pending = parsed;
         }
