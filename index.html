@@ -372,7 +372,9 @@ a.btn { text-decoration: none; color: var(--ink); }
 .mode-switch svg { width: 18px; height: 18px; stroke: var(--muted); }
 /* Kollegor: search and sort on one row; slim rows with name and time only, your own row marked. */
 .day-nav { display: flex; align-items: center; gap: 6px; margin-top: calc(var(--space-inner) - var(--space-section)); }
-.day-nav .dn-label { flex: 1; text-align: center; font-weight: 600; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
+/* The date slides with a swipe and fades out before it reaches the arrows. */
+.day-nav .dn-mid { flex: 1; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 20px), transparent); }
+.day-nav .dn-label { display: block; text-align: center; white-space: nowrap; font-weight: 600; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
 .day-nav .dn-arrow { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; background: var(--accent-soft); cursor: pointer; }
 .day-nav .dn-arrow svg { width: 16px; height: 16px; stroke: var(--ink); }
 .day-nav .icon-btn, .day-nav .dn-pad { width: 40px; height: 40px; background: none; flex: none; }
@@ -409,7 +411,17 @@ a.btn { text-decoration: none; color: var(--ink); }
 .plan-btn:disabled { opacity: 0.5; cursor: default; }
 .pop-bg { z-index: 30; }
 .plan-pop { position: fixed; z-index: 31; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100% - 32px)); background: var(--surface); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(23, 13, 28, 0.3); }
-.dept-edit .sec-head h3 { margin: 0; }
+.set-item { display: flex; flex-direction: column; gap: 8px; padding: 12px 2px 4px; border-top: 1px solid var(--line); }
+.set-item .si-t { font-weight: 500; font-size: var(--fs-md); }
+.set-item .hint { margin: -4px 0 0; }
+.panel .set-list + .set-item, .panel > .set-list:first-of-type { margin-top: 0; }
+.check-list { list-style: none; margin: 0; padding: 0; }
+.check-list li + li { border-top: 1px solid var(--line); }
+.check-list button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; padding: 0 4px; background: none; border: 0; font: inherit; font-size: var(--fs-md); color: var(--ink); text-align: left; cursor: pointer; }
+.check-list button svg { width: 18px; height: 18px; stroke: var(--accent); visibility: hidden; }
+.check-list button[aria-pressed="true"] { font-weight: 600; }
+.check-list button[aria-pressed="true"] svg { visibility: visible; }
+.check-list button:active { background: var(--accent-soft); }
 .dept-members { list-style: none; margin: 4px 0 0; padding: 0; }
 .dept-members li + li { border-top: 1px solid var(--line); }
 .dept-members button { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 48px; padding: 0 2px; background: none; border: 0; font: inherit; font-size: var(--fs-md); color: var(--ink); text-align: left; cursor: pointer; }
@@ -586,6 +598,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     peopleMode: lsGet("skift.peoplemode") === "dept" || lsGet("skift.daymode") === "dept" ? "dept" : "all",
     daySort: lsGet("skift.daysort") === "end" ? "end" : "start",
     peopleOff: 0,
+    favQ: "",
+    planQ: "",
+    deptIdx: 0,
     profile: lsGet("skift.profile"),
     picking: false,
     weekOffset: 0,
@@ -897,7 +912,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // a small popup with the choices. Picking one saves it and closes the popup.
   function planSelect(p) {
     var cur = PLAN_OF[keyOf(p)], g = planOf(p), ok = dbState === "ready";
-    var val = cur != null ? numText(cur) + "\u00a0h" : g.auto ? hours(g.h * 60) : "Ingen vald";
+    var val = cur != null ? numText(cur) + "\u00a0h" : g.auto ? "Auto " + hours(g.h * 60) : "Ingen";
     return '<button class="plan-btn" data-act="planopen" data-name="' + esc(p.name) + '" aria-haspopup="dialog" aria-label="Planeringstid för ' + esc(p.name) + ", " + val + '"' + (ok ? "" : " disabled") + ">" + val + ICON.down + "</button>";
   }
   function renderDeptPop() {
@@ -1002,6 +1017,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     right: '<svg viewBox="0 0 16 16" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg>',
     mark: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#ACC7B4"/><rect x="7" y="9" width="18" height="16" rx="3.5" fill="none" stroke="#331B3F" stroke-width="2.2"/><path d="M12 6.5v4.5M20 6.5v4.5" fill="none" stroke="#331B3F" stroke-width="2.2" stroke-linecap="round"/><rect x="10.5" y="13.8" width="4.6" height="3.6" rx="1" fill="#331B3F"/><rect x="16.9" y="13.8" width="4.6" height="3.6" rx="1" fill="#331B3F"/><rect x="10.5" y="19" width="4.6" height="3.4" rx="1" fill="#331B3F"/><rect x="16.9" y="19" width="4.6" height="3.4" rx="1" fill="#E3A33B" stroke="#331B3F" stroke-width="1"/></svg>',
     home: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+    check: '<svg viewBox="0 0 16 16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>',
     pen: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5l4 4M4 20l1-4.5L15.8 4.7a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.5 19 4 20z"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg>',
     groups: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="4" width="16" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="16" height="6.5" rx="1.8"/></svg>',
@@ -1051,6 +1067,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (state.view === "grid" && !needPick) {
       if (state.peopleQ) filterList(state.peopleQ, "#people-list", "people-none");
       if (focusId === "people-q") { var pq = document.getElementById("people-q"); pq.focus(); pq.setSelectionRange(pq.value.length, pq.value.length); }
+    }
+    if (state.view === "settings" && (state.sub === "favs" || state.sub === "plan")) {
+      var sq = state.sub === "favs" ? "fav" : "plan";
+      if (state[sq + "Q"]) filterList(state[sq + "Q"], "#" + sq + "-list", sq + "-none");
+      if (focusId === sq + "-q") { var sqi = document.getElementById(sq + "-q"); sqi.focus(); sqi.setSelectionRange(sqi.value.length, sqi.value.length); }
     }
     if (needPick && state.view !== "settings") {
       if (state.pickQ) filterPicker(state.pickQ);
@@ -1226,9 +1247,16 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   // ---------- Favourite colleagues (kept per viewer in this browser) ----------
-  function favPeople(me) { return state.favs.map(personByName).filter(function (p) { return p && !(me && p.name === me.name); }); }
-  function isFav(n) { return state.favs.indexOf(n) >= 0; }
+  // Nobody chosen: your own department is used. Choosing someone starts from that list.
+  function favAuto(me) {
+    var d = me && DATA.depts ? deptOf(me) : null;
+    return d == null ? [] : DATA.people.filter(function (p) { return deptOf(p) === d && p.name !== me.name; }).map(function (p) { return p.name; });
+  }
+  function favNames(me) { return state.favs.length ? state.favs : favAuto(me); }
+  function favPeople(me) { return favNames(me).map(personByName).filter(function (p) { return p && !(me && p.name === me.name); }); }
+  function isFav(n) { return favNames(personByName(state.profile)).indexOf(n) >= 0; }
   function toggleFav(n) {
+    if (!state.favs.length) state.favs = favAuto(personByName(state.profile)).slice();
     var i = state.favs.indexOf(n);
     if (i >= 0) state.favs.splice(i, 1); else state.favs.push(n);
     lsSet("skift.favs", state.favs.length ? JSON.stringify(state.favs) : null);
@@ -1473,7 +1501,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     return '<div class="view">' + exampleNote() +
       '<div class="sec-head"><h2>Kollegor</h2>' + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div>" +
       '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + '</button><span class="dn-pad"></span>' +
-      '<span class="dn-label" data-pslide>' + (off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "") + (off >= -1 && off <= 1 ? DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + "</span>" +
+      '<span class="dn-mid"><span class="dn-label" data-pslide>' + (off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "") + (off >= -1 && off <= 1 ? DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + "</span></span>" +
       todayBtn("people0", !isToday) + '<button class="dn-arrow" data-act="peopleday" data-d="1" aria-label="Nästa dag">' + ICON.right + "</button></div>" +
       '<section class="people-sec"><div class="tools"><input id="people-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.peopleQ) + '" autocomplete="off" aria-label="Sök namn">' +
       '<div class="mini-seg" role="group" aria-label="Sortera på"><button data-act="daysort" data-s="start" aria-pressed="' + (sort === "start") + '" aria-label="Sortera på starttid">Start</button><button data-act="daysort" data-s="end" aria-pressed="' + (sort === "end") + '" aria-label="Sortera på sluttid">Slut</button></div></div>' +
@@ -1510,35 +1538,44 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   // Settings: everyday choices on the first page, schedule and rules as rows that open their own page.
-  var SUBS = [["file", "Schemafil"], ["week", "Schemavecka"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["time", "Rast"], ["help", "Vilka Excel-filer fungerar?"]];
+  var SUBS = [["file", "Schemafil"], ["plan", "Planeringstid"], ["depts", "Avdelningar"], ["help", "Vilka Excel-filer fungerar?"], ["favs", "Avdelningskollegor"], ["dept", "Avdelning"]];
+  // Names sorted as people read them: "(Paula)" among the P's.
+  function byPersonName(a, b) { var k = function (n) { return n.replace(/^[^0-9A-Za-zÅÄÖåäöÉé]+/, ""); }; return k(a.name).localeCompare(k(b.name), "sv"); }
+  function setRow(act, key, title, value) {
+    return '<li><button class="set-row" data-act="' + act + '"' + (key ? ' data-s="' + key + '"' : "") + '><span class="sr-t">' + title + '</span><span class="sr-v">' + esc(value || "") + "</span>" + ICON.right + "</button></li>";
+  }
   function settingsMsg() { return state.msg ? '<div class="msg ' + (state.msg.ok ? "ok" : "err") + '" role="status">' + esc(state.msg.text) + "</div>" : ""; }
   function renderSettings(me) {
     if (state.sub) return renderSub(me, state.sub);
-    var curW = rotWeek(today());
+    var t = today(), curW = rotWeek(t);
     var out = '<div class="view settings"><div class="sec-head"><h2>Inställningar</h2></div>' + settingsMsg();
 
-    out += '<section class="panel"><h3>Din profil</h3><p>' + (me ? "Du visas som <strong>" + esc(me.name) + "</strong>." : "Ingen profil vald.") + '</p><div class="btn-row"><button class="btn" data-act="pick">' + (me ? "Byt profil" : "Välj profil") + "</button></div></section>";
-
-    out += '<section class="panel"><h3>Utseende</h3><div class="seg-ctl" role="group" aria-label="Utseende">';
+    // For you: kept on this phone only.
+    var fn = favNames(me), autoF = !state.favs.length && fn.length;
+    out += '<section class="panel"><h3>För dig</h3><ul class="set-list">' + setRow("pick", null, "Profil", me ? me.name : "Ingen vald") +
+      setRow("sub", "favs", "Avdelningskollegor", autoF ? "Din avdelning" : fn.length ? fn.length + " valda" : "Inga valda") + "</ul>" +
+      '<div class="set-item"><span class="si-t">Utseende</span><div class="seg-ctl" role="group" aria-label="Utseende">';
     [["auto", "Automatiskt", ICON.auto], ["light", "Ljust", ICON.sun], ["dark", "Mörkt", ICON.moon]].forEach(function (o) { out += '<button class="theme-btn" data-act="settheme" data-t="' + o[0] + '" aria-pressed="' + (themePref() === o[0]) + '">' + o[2] + "<span>" + o[1] + "</span></button>"; });
-    out += "</div></section>";
-
-    out += '<section class="panel" id="fav-panel"><h3>Avdelningskollegor</h3><p class="hint">Visas under din vecka på startsidan.</p><div class="chips">' +
-      DATA.people.filter(function (p) { return !(me && p.name === me.name); }).map(function (p) { return '<button class="chip" data-act="fav" data-name="' + esc(p.name) + '" aria-pressed="' + isFav(p.name) + '">' + esc(p.name) + "</button>"; }).join("") + "</div></section>";
-
+    out += "</div></div>";
     if (me) {
-      out += '<section class="panel"><h3>Kalender</h3><p class="hint">Dina pass 8 veckor framåt, som fil för Google Kalender.</p>' +
+      out += '<div class="set-item"><span class="si-t">Kalender</span><p class="hint">Dina pass 8 veckor framåt, som fil för Google Kalender.</p>' +
         (state.homeMsg ? '<div class="msg ' + (state.homeMsg.ok ? "ok" : "err") + '" role="status">' + esc(state.homeMsg.text) + "</div>" : "") +
-        '<div class="btn-row"><button class="btn" data-act="exportcal">Spara pass för kalendern</button></div></section>';
+        '<div class="btn-row"><button class="btn" data-act="exportcal">Spara pass för kalendern</button></div></div>';
     }
+    out += "</section>";
 
-    var chosen = Object.keys(PLAN_OF).length;
-    var values = { file: DATA.source || "", week: "Nu vecka " + (curW + 1), plan: chosen ? chosen + " valda" : "", time: breakMin() ? breakMin() + " min" : "Ingen", help: "" };
-    var dl = deptList();
-    values.depts = dl ? dl.length + " st" : "";
-    out += '<section class="panel"><h3>Schema och regler</h3><ul class="set-list">' + SUBS.filter(function (x) { return x[0] !== "depts" || dl; }).map(function (x) {
-      return '<li><button class="set-row" data-act="sub" data-s="' + x[0] + '"><span class="sr-t">' + x[1] + '</span><span class="sr-v">' + esc(values[x[0]]) + "</span>" + ICON.right + "</button></li>";
-    }).join("") + "</ul></section>";
+    // For everyone: the schedule and its rules.
+    var chosen = Object.keys(PLAN_OF).length, dl = deptList(), up = new Date(DATA.updated);
+    out += '<section class="panel"><h3>Gäller alla</h3><p class="hint">' + (dbState === "ready" ? "Ändringar här syns för alla som använder appen." : "Ändringar här sparas på den här telefonen.") + '</p><ul class="set-list">' +
+      setRow("sub", "file", "Schemafil", isNaN(up) ? "" : "Uppdaterad " + shortDate(up)) +
+      setRow("sub", "plan", "Planeringstid", chosen ? chosen + " valda" : "Automatisk") +
+      (dl ? setRow("sub", "depts", "Avdelningar", dl.length + " st") : "") + "</ul>" +
+      '<div class="set-item"><span class="si-t">Schemavecka nu</span><p class="hint">Vecka ' + isoWeek(t) + " (" + weekRange(mondayOf(t)) + ").</p>" +
+      '<div class="seg-ctl" role="group" aria-label="Schemavecka nu">';
+    for (var w = 0; w < DATA.weeks; w++) out += '<button data-act="setweek" data-w="' + w + '" aria-pressed="' + (w === curW) + '">' + (w + 1) + "</button>";
+    out += '</div></div><div class="set-item"><span class="si-t">Rast</span><p class="hint">Dras av från pass över 5 timmar. Pass över 10 timmar får 30 minuter extra.</p><div class="seg-ctl" role="group" aria-label="Rast i minuter">';
+    [0, 30, 45, 60].forEach(function (m) { out += '<button data-act="setbreak" data-m="' + m + '" aria-pressed="' + (m === breakMin()) + '">' + (m ? m + "\u00a0min" : "Ingen") + "</button>"; });
+    out += "</div></div></section>";
 
     return out + "</div>";
   }
@@ -1546,14 +1583,16 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function renderSub(me, sub) {
     var t = today(), curW = rotWeek(t), title = "";
     SUBS.forEach(function (x) { if (x[0] === sub) title = x[1]; });
-    var out = '<div class="view settings sub">' + (DATA.people.length || sub !== "file" ? '<button class="back-btn" data-act="subback">' + ICON.left + "<span>Inställningar</span></button>" : "") +
-      '<div class="sec-head"><h2>' + title + "</h2></div>" + settingsMsg();
+    var dl3 = deptList();
+    if (sub === "dept") title = dl3 && dl3[state.deptIdx] ? dl3[state.deptIdx].name : "Avdelning";
+    var out = '<div class="view settings sub">' + (DATA.people.length || sub !== "file" ? '<button class="back-btn" data-act="subback">' + ICON.left + "<span>" + (sub === "dept" ? "Avdelningar" : "Inställningar") + "</span></button>" : "") +
+      '<div class="sec-head"><h2>' + esc(title) + "</h2>" + (sub === "dept" ? '<button class="text-btn" data-act="deptrename" data-i="' + state.deptIdx + '">Byt namn</button>' : "") + "</div>" + settingsMsg();
 
     if (sub === "file") {
       out += '<section class="panel">';
       if (!DATA.people.length) out += "<p>Ladda upp schemat som Excel-fil för att börja.</p>";
       else out += '<dl class="kv"><dt>Källa</dt><dd>' + esc(DATA.source || "Okänd") + (DATA.example ? " (exempel)" : "") + "</dd>" +
-        "<dt>Uppdaterad</dt><dd>" + esc(fmtStamp(DATA.updated)) + "</dd><dt>Personer</dt><dd>" + DATA.people.length + "</dd><dt>Rullande</dt><dd>" + DATA.weeks + " veckor</dd></dl>";
+        "<dt>Uppdaterad</dt><dd>" + esc(fmtStamp(DATA.updated)) + "</dd><dt>Personer</dt><dd>" + DATA.people.length + "</dd><dt>Upprepas</dt><dd>" + (DATA.weeks === 1 ? "Varje vecka" : "Var " + DATA.weeks + ":e vecka") + "</dd></dl>";
       if (usingLocal && EMBEDDED.people.length) out += '<p class="hint">Det här schemat är bara sparat på den här enheten.</p><div class="btn-row"><button class="btn" data-act="droplocal">Använd det delade schemat</button></div>';
       if (state.pending) {
         var p = state.pending;
@@ -1575,33 +1614,32 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           '<div class="btn-row"><button class="btn" data-act="sub" data-s="help">Vilka Excel-filer fungerar?</button></div>';
       }
       out += "</section>";
-    } else if (sub === "week") {
-      out += '<section class="panel"><p>Vecka ' + isoWeek(t) + " (" + weekRange(mondayOf(t)) + ") är schemavecka:</p>" +
-        '<div class="seg-ctl" role="group" aria-label="Schemavecka nu">';
-      for (var w = 0; w < DATA.weeks; w++) out += '<button data-act="setweek" data-w="' + w + '" aria-pressed="' + (w === curW) + '">' + (w + 1) + "</button>";
-      out += "</div></section>";
     } else if (sub === "plan") {
       out += '<section class="panel"><p class="hint">Timmar per vecka utanför schemat. Räknas in i procenten. Utan val gissar appen utifrån schemat.</p>' +
         (state.planErr ? '<div class="msg err" role="alert">' + esc(state.planErr) + "</div>" : "") +
         (dbState === "ready" ? "" : '<p class="hint">Planeringstid kan bara ändras när appen är öppen via claude.ai.</p>') +
-        '<ul class="role-list">' + DATA.people.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "sv"); }).map(function (x) {
-          return '<li><span class="rl-n">' + esc(x.name) + "<small>" + employment(x).pct + " %</small></span>" + planSelect(x) + "</li>";
-        }).join("") + "</ul></section>";
+        '<input id="plan-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.planQ || "") + '" autocomplete="off" aria-label="Sök namn">' +
+        '<ul class="role-list" id="plan-list">' + DATA.people.slice().sort(byPersonName).map(function (x) {
+          return '<li data-q="' + esc(norm(x.name)) + '"><span class="rl-n">' + esc(x.name) + "<small>" + employment(x).pct + "\u00a0%</small></span>" + planSelect(x) + "</li>";
+        }).join("") + '</ul><p class="hint" id="plan-none" hidden>Inget namn matchar.</p></section>';
     } else if (sub === "depts") {
-      var dl2 = deptList() || [];
+      var dl2 = deptList() || [], loose = DATA.people.filter(function (x) { return deptOf(x) == null; });
+      out += '<section class="panel"><p class="hint">Öppna en avdelning för att byta namn eller flytta personal.</p><ul class="set-list">' +
+        dl2.map(function (d, i) { var n = DATA.people.filter(function (x) { return deptOf(x) === i; }).length; return '<li><button class="set-row" data-act="deptopen" data-i="' + i + '"><span class="sr-t">' + esc(d.name) + '</span><span class="sr-v">' + n + (n === 1 ? " person" : " personer") + "</span>" + ICON.right + "</button></li>"; }).join("") + "</ul>" +
+        (loose.length ? '<p class="hint">Utan avdelning: ' + loose.map(function (x) { return esc(x.name); }).join(", ") + ".</p>" : "") + "</section>";
+    } else if (sub === "favs") {
+      var auto = !state.favs.length, mine = me ? deptOf(me) : null;
+      out += '<section class="panel"><p class="hint">Visas under din vecka på startsidan och på yttre skärmen.</p>' +
+        (mine != null && dl3 ? '<ul class="check-list"><li><button data-act="favauto" aria-pressed="' + auto + '"><span>Din avdelning (' + esc(dl3[mine].name) + ")</span>" + ICON.check + "</button></li></ul>" : "") +
+        '<input id="fav-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.favQ || "") + '" autocomplete="off" aria-label="Sök namn">' +
+        '<ul class="check-list" id="fav-list">' + DATA.people.filter(function (x) { return !(me && x.name === me.name); }).sort(byPersonName).map(function (x) {
+          return '<li data-q="' + esc(norm(x.name)) + '"><button data-act="fav" data-name="' + esc(x.name) + '" aria-pressed="' + isFav(x.name) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>";
+        }).join("") + '</ul><p class="hint" id="fav-none" hidden>Inget namn matchar.</p></section>';
+    } else if (sub === "dept") {
+      var members = DATA.people.filter(function (x) { return deptOf(x) === state.deptIdx; }).sort(byPersonName);
       out += '<section class="panel"><p class="hint">Tryck på ett namn för att flytta personen till en annan avdelning.</p>' +
-        (state.deptErr ? '<div class="msg err" role="alert">' + esc(state.deptErr) + "</div>" : "") + "</section>";
-      dl2.concat([{ name: "Utan avdelning", none: true }]).forEach(function (d, i) {
-        var idx = d.none ? null : i, members = DATA.people.filter(function (x) { return deptOf(x) === idx; });
-        if (d.none && !members.length) return;
-        out += '<section class="panel dept-edit"><div class="sec-head"><h3>' + esc(d.name) + "</h3>" +
-          (d.none ? "" : '<button class="text-btn" data-act="deptrename" data-i="' + i + '">Byt namn</button>') + "</div>" +
-          (members.length ? '<ul class="dept-members">' + members.map(function (x) { return '<li><button data-act="deptmove" data-name="' + esc(x.name) + '">' + esc(x.name) + ICON.right + "</button></li>"; }).join("") + "</ul>" : '<p class="hint">Ingen här.</p>') + "</section>";
-      });
-    } else if (sub === "time") {
-      out += '<section class="panel"><p class="hint">Dras av från pass över 5 timmar. Pass över 10 timmar får 30 minuter extra.</p><div class="seg-ctl" role="group" aria-label="Rast i minuter">';
-      [0, 30, 45, 60].forEach(function (m) { out += '<button data-act="setbreak" data-m="' + m + '" aria-pressed="' + (m === breakMin()) + '">' + (m ? m + " min" : "Ingen") + "</button>"; });
-      out += "</div></section>";
+        (state.deptErr ? '<div class="msg err" role="alert">' + esc(state.deptErr) + "</div>" : "") +
+        (members.length ? '<ul class="set-list">' + members.map(function (x) { return '<li><button class="set-row" data-act="deptmove" data-name="' + esc(x.name) + '"><span class="sr-t">' + esc(x.name) + '</span><span class="sr-v">Flytta</span>' + ICON.right + "</button></li>"; }).join("") + "</ul>" : '<p class="hint">Ingen här.</p>') + "</section>";
     } else if (sub === "help") {
       out += '<section class="panel help"><ol>' +
         "<li>Veckodagarna som kolumner och en rad per person. Ett blad per vecka, en rad per person och vecka, eller flera veckor bredvid varandra går bra.</li>" +
@@ -2496,8 +2534,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var act = b.getAttribute("data-act");
     if (act === "fav") { toggleFav(b.getAttribute("data-name")); buzz(); render(); return; }
     if (act === "sub") { state.view = "settings"; state.sub = b.getAttribute("data-s"); state.picking = false; lsSet("skift.view", "settings"); render(); window.scrollTo(0, 0); return; }
-    if (act === "subback") { state.sub = null; state.msg = null; render(); window.scrollTo(0, 0); return; }
-    if (act === "gofavs") { state.view = "settings"; lsSet("skift.view", "settings"); render(); var fpn = document.getElementById("fav-panel"); if (fpn) fpn.scrollIntoView(); return; }
+    if (act === "subback") { state.sub = state.sub === "dept" ? "depts" : null; state.msg = null; render(); window.scrollTo(0, 0); return; }
+    if (act === "gofavs") { state.view = "settings"; state.sub = "favs"; lsSet("skift.view", "settings"); render(); window.scrollTo(0, 0); return; }
+    if (act === "deptopen") { state.sub = "dept"; state.deptIdx = +b.getAttribute("data-i"); render(); window.scrollTo(0, 0); return; }
+    if (act === "favauto") { state.favs = []; lsSet("skift.favs", null); buzz(); render(); return; }
     if (act === "daysort") { state.daySort = b.getAttribute("data-s"); lsSet("skift.daysort", state.daySort === "end" ? "end" : null); render(); return; }
     if (act === "peoplemode") { state.peopleMode = b.getAttribute("data-m"); lsSet("skift.peoplemode", state.peopleMode === "dept" ? "dept" : null); render(); return; }
     if (act === "go") { state.view = b.getAttribute("data-view"); state.picking = false; state.sub = null; if (state.view !== "settings") state.msg = null; lsSet("skift.view", state.view); render(); window.scrollTo(0, 0); }
@@ -2551,6 +2591,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
   app.addEventListener("input", function (e) {
     if (e.target.id === "pick-q") { state.pickQ = e.target.value; filterPicker(state.pickQ); return; }
+    if (e.target.id === "fav-q") { state.favQ = e.target.value; filterList(state.favQ, "#fav-list", "fav-none"); return; }
+    if (e.target.id === "plan-q") { state.planQ = e.target.value; filterList(state.planQ, "#plan-list", "plan-none"); return; }
     if (e.target.id === "people-q") { var hadQ = !!state.peopleQ.trim(); state.peopleQ = e.target.value; if (hadQ !== !!state.peopleQ.trim()) render(); else filterList(state.peopleQ, "#people-list", "people-none"); return; }
   });
   app.addEventListener("keydown", function (e) {
