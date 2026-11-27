@@ -232,7 +232,17 @@ main .wrap { display: flex; flex-direction: column; gap: var(--space-section); p
 .theme-btn svg { width: 22px; height: 22px; stroke: currentColor; }
 .seg-ctl button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .drop { position: relative; border: 1.5px dashed var(--line); border-radius: 12px; padding: 18px 14px; text-align: center; color: var(--muted); font-size: var(--fs-sm); display: flex; flex-direction: column; gap: 10px; align-items: center; }
-.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop.over, .file-pick.over { border-color: var(--accent); background: var(--accent-soft); }
+.file-pick { display: flex; flex-direction: column; align-items: stretch; gap: 6px; border-radius: 12px; }
+.file-btn { position: relative; width: 100%; min-height: 52px; font-size: var(--fs-md); }
+.file-btn input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.file-btn:focus-within { outline: 2px solid var(--hl); outline-offset: 2px; }
+.file-pick .hint { text-align: center; }
+.link-btn { align-self: flex-start; background: none; border: 0; padding: 4px 0; font: inherit; font-size: var(--fs-sm); color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.lead { font-size: var(--fs-md); }
+.steps { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: var(--fs-sm); }
+.share-sched { display: flex; flex-direction: column; gap: 6px; padding-top: 14px; margin-top: 6px; border-top: 1px solid var(--line); }
+.view.settings.first .sec-head h2 { font-size: var(--fs-xl); }
 .drop input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; z-index: 1; }
 .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .msg { border-radius: 10px; padding: 10px 12px; font-size: var(--fs-sm); }
@@ -337,7 +347,9 @@ a.btn { text-decoration: none; color: var(--ink); }
 /* Bottom sheet: grab handle, slides in, can be dragged down */
 .sheet-grab { display: grid; place-items: center; height: 22px; margin-bottom: -6px; cursor: grab; touch-action: none; }
 .sheet-grab span { width: 40px; height: 5px; border-radius: 3px; background: var(--line); }
-.sheet { will-change: transform; overflow-x: hidden; }
+.sheet { will-change: transform; overflow-x: hidden; overscroll-behavior: contain; }
+html.lock { overflow: hidden; }
+.plan-pop, .abs-list { overscroll-behavior: contain; }
 
 /* Settings: rows that open a page each, large enough to tap */
 .set-list { list-style: none; margin: 0; padding: 0; }
@@ -382,7 +394,30 @@ a.btn { text-decoration: none; color: var(--ink); }
 .head-tools { display: flex; align-items: center; gap: 6px; }
 .kol-head { flex-wrap: wrap; row-gap: 8px; }
 .kol-head .head-tools { margin-left: auto; }
-.report-btn { width: 40px; height: 40px; }
+.kol-head { flex-wrap: nowrap; }
+.plain-ic { width: 40px; height: 40px; display: grid; place-items: center; background: none; border: 0; border-radius: 10px; cursor: pointer; }
+.plain-ic svg { width: 22px; height: 22px; stroke: var(--ink); }
+.plain-ic:active, .plain-ic[aria-pressed="true"] { background: var(--accent-soft); }
+.view-seg { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; gap: 3px; border-radius: 12px; background: var(--accent-soft); margin-top: calc(var(--space-inner) - var(--space-section)); }
+.view-seg button { height: 38px; border: 0; border-radius: 9px; background: none; font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); cursor: pointer; }
+.view-seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 2px rgba(23, 13, 28, 0.2); }
+.report-btn { width: auto; min-width: 40px; height: 40px; padding: 0 10px; gap: 6px; display: inline-flex; align-items: center; font-size: var(--fs-sm); font-weight: 600; color: var(--ink); }
+.report-btn .rb-t { display: none; }
+@media (min-width: 420px) { .report-btn .rb-t { display: inline; } }
+.head-ic { width: 40px; height: 40px; }
+.head-ic svg { width: 19px; height: 19px; }
+.head-ic[aria-pressed="true"] { background: var(--accent); }
+.head-ic[aria-pressed="true"] svg { stroke: var(--accent-ink); }
+.dn-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.dn-col .dn-mid { width: 100%; }
+.dn-time { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; cursor: pointer; }
+.dn-time svg { width: 12px; height: 12px; stroke: currentColor; }
+.dn-time:active { background: var(--accent-soft); }
+.tp-sort { display: flex; flex-direction: column; gap: 6px; }
+.tp-sort .mini-seg { height: 40px; }
+.tp-sort .mini-seg button { flex: 1; }
+.plist li.is-now .prow { box-shadow: inset 3px 0 0 var(--live); border-radius: 0 10px 10px 0; }
+.plist li.me.is-now .prow { border-radius: 0 10px 10px 0; }
 .report-btn svg { width: 20px; height: 20px; }
 .time-pick { display: flex; align-items: center; gap: 8px; }
 .time-btn { flex: 1; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; text-align: left; }
@@ -433,6 +468,7 @@ a.btn { text-decoration: none; color: var(--ink); }
 .rp-preview:not(.full)::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: linear-gradient(transparent, var(--bg)); }
 .rp-preview.full { max-height: none; }
 .rp-more { align-self: flex-start; }
+.rp-edit { width: 100%; font: inherit; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
 .rp-fold { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0; background: none; border: 0; font: inherit; font-size: var(--fs-md); font-weight: 600; color: var(--ink); cursor: pointer; }
 .rp-fold svg { width: 16px; height: 16px; stroke: var(--muted); transition: transform 0.15s; }
 .rp-fold[aria-expanded="true"] svg { transform: rotate(180deg); }
@@ -682,6 +718,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     daySort: lsGet("skift.daysort") === "end" ? "end" : "start",
     peopleOff: 0,
     peopleAt: null,
+    peopleSearch: false,
+    pendingEdit: null,
+    shareMsg: null,
     timePop: false,
     report: false,
     reportFresh: false,
@@ -696,6 +735,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     reportNote: null,
     reportTitle: null,
     reportCustom: false,
+    reportText: null,
     reportFull: false,
     subTimePop: false,
     otherPop: null,
@@ -907,7 +947,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       }, function () {});
       db.collection("days").onSnapshot(function (snap) {
         var m = {};
-        snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.date) m[x.date] = { absent: x.absent || {}, subs: Array.isArray(x.subs) ? x.subs : [], note: typeof x.note === "string" ? x.note : "", title: typeof x.title === "string" ? x.title : "" }; });
+        snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.date) m[x.date] = { absent: x.absent || {}, subs: Array.isArray(x.subs) ? x.subs : [], note: typeof x.note === "string" ? x.note : "", title: typeof x.title === "string" ? x.title : "", text: typeof x.text === "string" ? x.text : "" }; });
         DAY_EDIT = m;
         render();
       }, function () {});
@@ -1011,9 +1051,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       '<div class="chips other-hints">' + OTHER_HINTS.map(function (h) { return '<button type="button" class="chip" data-act="otherhint" data-for="' + id + '" data-v="' + h + '">' + h + "</button>"; }).join("") + "</div>";
   }
   function absenceName(w) { var a = ABSENCE.filter(function (x) { return x[0] === w; })[0]; return a ? a[1] : w; }
-  function dayEdit(d) { var r = DAY_EDIT[ymd(d)] || {}; return { absent: r.absent || {}, subs: r.subs || [], note: r.note || "", title: r.title || "" }; }
+  function dayEdit(d) { var r = DAY_EDIT[ymd(d)] || {}; return { absent: r.absent || {}, subs: r.subs || [], note: r.note || "", title: r.title || "", text: r.text || "" }; }
   function writeDay(d, rec, quiet) {
     var k = ymd(d);
+    // Fields not given (for example a hand-edited text) are kept as they were.
+    rec = Object.assign({}, dayEdit(d), rec);
     DAY_EDIT[k] = rec;
     if (!quiet) { buzz(); render(); }
     if (!dbRef) {
@@ -1022,7 +1064,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       Object.keys(DAY_EDIT).forEach(function (x) { if (x < old) delete DAY_EDIT[x]; });
       lsSet("skift.days", JSON.stringify(DAY_EDIT)); return;
     }
-    dbRef.collection("days").doc("d" + k).set({ date: k, absent: rec.absent, subs: rec.subs, note: rec.note || "", title: rec.title || "" }).then(null, function () {
+    dbRef.collection("days").doc("d" + k).set({ date: k, absent: rec.absent, subs: rec.subs, note: rec.note || "", title: rec.title || "", text: rec.text || "" }).then(null, function () {
       state.reportErr = "Ändringen kunde inte sparas. Försök igen."; render();
     });
   }
@@ -1097,6 +1139,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
   function reportDate(d) { return DAYS[dow(d)].toLowerCase() + " " + d.getDate() + " " + MONTHS_LONG[d.getMonth()]; }
   function reportTitle(d) { return (reportOpts().titleBase || "Dagsrapport") + " " + reportDate(d); }
+  // A hand-edited text: the heading and department names (and the group headings) stay bold.
+  function customHtml(t) {
+    var heads = (deptList() || []).map(function (x) { return x.name; }).concat(["Utan avdelning", "På jobbet", "Frånvarande"]);
+    return t.split("\n").map(function (l, i) { return i === 0 || heads.indexOf(l.trim()) >= 0 ? "<b>" + esc(l) + "</b>" : esc(l); }).join("<br>");
+  }
   function reportText(me, d, note) {
     var o = reportOpts(), rec = dayEdit(d), dl = deptList(), mine = me ? deptOf(me) : null;
     var inScope = function (dept) { return o.scope !== "mine" || mine == null || dept === mine; };
@@ -1209,9 +1256,16 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         '<div class="rp-row"><span class="hint">' + (o.titleBase ? "Rubrik varje dag: " + esc(o.titleBase) + " och datum" : "Rubrik varje dag: Dagsrapport och datum") + "</span>" +
         '<button class="text-btn" data-act="titlesave">Använd rubriken ovan varje dag</button>' + (o.titleBase ? '<button class="text-btn" data-act="titlereset">Återställ</button>' : "") + "</div>" : "") + "</section>" +
       // The finished text last, and the copy button always in reach at the bottom.
-      '<section class="rp-sec"><h4>Färdig text</h4><div class="rp-preview' + (state.reportFull ? " full" : "") + '" id="report-preview">' + reportHtml(text) + "</div>" +
-        '<button class="text-btn rp-more" data-act="rfull">' + (state.reportFull ? "Visa mindre" : "Visa hela") + "</button>" +
-        '<textarea id="report-text" class="rp-copy" readonly tabindex="-1" aria-hidden="true">' + esc(reportPlain(text)) + "</textarea></section>" +
+      (rec.text ?
+        // Edited by hand: this text is what is sent, and the choices above no longer change it.
+        '<section class="rp-sec"><h4>Färdig text</h4><p class="hint">Redigerad för hand. Ändringar ovan påverkar inte texten.</p>' +
+          '<textarea id="report-custom" class="rp-edit" rows="14">' + esc(state.reportText != null ? state.reportText : rec.text) + "</textarea>" +
+          '<button class="text-btn rp-more" data-act="rtextreset">Återställ till automatisk text</button>' +
+          '<div id="report-preview" hidden>' + customHtml(state.reportText != null ? state.reportText : rec.text) + "</div>" +
+          '<textarea id="report-text" class="rp-copy" readonly tabindex="-1" aria-hidden="true">' + esc(state.reportText != null ? state.reportText : rec.text) + "</textarea></section>"
+      : '<section class="rp-sec"><h4>Färdig text</h4><div class="rp-preview' + (state.reportFull ? " full" : "") + '" id="report-preview">' + reportHtml(text) + "</div>" +
+        '<div class="rp-row"><button class="text-btn" data-act="rfull">' + (state.reportFull ? "Visa mindre" : "Visa hela") + '</button><button class="text-btn" data-act="rtextedit">Redigera texten</button></div>' +
+        '<textarea id="report-text" class="rp-copy" readonly tabindex="-1" aria-hidden="true">' + esc(reportPlain(text)) + "</textarea></section>") +
       '<div class="rp-bar pop-btns"><button class="btn' + (canShare ? "" : " primary") + '" data-act="rcopy">' + (state.reportCopied ? "Kopierad" : "Kopiera text") + "</button>" + (canShare ? '<button class="btn primary" data-act="rshare">Dela</button>' : "") + "</div>" +
       "</div></div>";
   }
@@ -1265,6 +1319,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     for (var m = 0; m < 60; m += 5) mins.push(m);
     return '<div class="sheet-bg pop-bg" data-act="timeclose"></div><div class="plan-pop time-pop" role="dialog" aria-modal="true" aria-labelledby="time-title">' +
       '<div class="sheet-head"><div style="min-width:0"><h3 id="time-title">Visa vilka som jobbar</h3><div class="sub">' + (off === 0 ? "Idag" : DAYS[dow(t)] + " " + shortDate(t)) + '</div></div><button class="icon-btn" data-act="timeclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
+      '<div class="tp-sort"><span class="hint">Ordning</span><div class="mini-seg" role="group" aria-label="Sortera på"><button data-act="daysort" data-s="start" aria-pressed="' + (state.daySort !== "end") + '">Efter starttid</button><button data-act="daysort" data-s="end" aria-pressed="' + (state.daySort === "end") + '">Efter sluttid</button></div></div>' +
       '<div class="wheels big">' + wheel("wh-h", hrs, Math.floor(val / 60), "Timme") + '<span class="wsep">:</span>' + wheel("wh-m", mins, Math.round(val % 60 / 5) * 5 % 60, "Minut") + "</div>" +
       '<div class="pop-btns"><button class="btn" data-act="timeclear">' + (off === 0 ? "Nu" : "Hela dagen") + '</button><button class="btn primary" data-act="timeset">Visa tid</button></div></div>';
   }
@@ -1353,6 +1408,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     home: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
     check: '<svg viewBox="0 0 16 16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>',
     report: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
     pen: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5l4 4M4 20l1-4.5L15.8 4.7a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.5 19 4 20z"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg>',
     groups: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="4" width="16" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="16" height="6.5" rx="1.8"/></svg>',
@@ -1401,6 +1457,21 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }
     patchChildren(a, b);
   }
+  // While a sheet or popup is open the page behind it stays still, and where it was.
+  var lockedAt = null;
+  function lockPage(on) {
+    var bs = document.body.style;
+    if (on && lockedAt == null) {
+      lockedAt = window.scrollY;
+      bs.position = "fixed"; bs.top = -lockedAt + "px"; bs.left = "0"; bs.right = "0";
+      document.documentElement.classList.add("lock");
+    } else if (!on && lockedAt != null) {
+      var y = lockedAt; lockedAt = null;
+      bs.position = ""; bs.top = ""; bs.left = ""; bs.right = "";
+      document.documentElement.classList.remove("lock");
+      window.scrollTo(0, y);
+    }
+  }
   function render() {
     applyNames();
     var me = state.profile && personByName(state.profile);
@@ -1432,6 +1503,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var oldDeck = document.getElementById("deck"), deckTop = oldDeck ? oldDeck.scrollTop : 0;
     var oldSheet = app.querySelector(".sheet"), sheetTop = oldSheet ? oldSheet.scrollTop : 0, sheetKind = state.edit ? "edit" : state.person ? "person" : "";
     morph(app, html);
+    lockPage(!!(state.report || state.person || state.edit || state.planOpen || state.deptPop || state.timePop || state.absPop || state.otherPop || state.subTimePop));
     var newDeck = document.getElementById("deck");
     if (newDeck && oldDeck) newDeck.scrollTop = deckTop;
     // Keep the sheet where it was scrolled when the page redraws behind it.
@@ -1863,13 +1935,21 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       } else txt = s.kind === "note" ? esc(s.label) : s.closed ? esc(s.closed) : "Ledig";
       return { p: p, s: s, st: st, txt: txt };
     });
+    // Today's substitutes from the daily report, in their department, marked as such.
+    dayEdit(t).subs.forEach(function (x) {
+      var sh = parseShift(x.time || ""), w = sh.kind === "work" && sh.ranges.length, st = w ? 0 : 3;
+      if (w && at != null) st = sh.ranges.some(function (r) { return at >= r.s && at < r.e; }) ? 0 : sh.ranges.some(function (r) { return at < r.s; }) ? 1 : 2;
+      all.push({ p: { name: x.name, orig: "vikarie:" + x.name, dept: x.dept == null ? null : x.dept, sub: true }, s: w ? sh : { kind: "note", label: "", ranges: [] }, st: st, txt: w ? rangeText(sh) : "Tid saknas" });
+    });
     function byName(a, b) { return a.p.name.localeCompare(b.p.name, "sv"); }
     // Those who have gone home: whoever left last comes first, whichever sort is chosen.
     function timeKey(x) { return x.st === 3 ? 0 : x.st === 2 ? -x.s.ranges[x.s.ranges.length - 1].e : sort === "end" ? x.s.ranges[x.s.ranges.length - 1].e : x.s.ranges[0].s; }
     function cmp(a, b) { return a.st - b.st || timeKey(a) - timeKey(b) || byName(a, b); }
     function row(x) {
       var isMe = me && me.name === x.p.name, cls = x.st === 0 ? (at != null ? "now" : "work") : x.st === 3 ? (x.s.kind === "note" ? "note" : "past") : x.st === 2 ? "past" : "work";
-      return '<li data-q="' + esc(norm(x.p.name)) + '"' + (isMe ? ' class="me"' : "") + '><button class="prow slim" data-act="person" data-name="' + esc(x.p.name) + '"><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : isExtra(x.p) ? "<small>förstärkning</small>" : "") + '</span><span class="pt ' + cls + '">' + x.txt + "</span></button></li>";
+      // Working right now: a thin green edge on the left of the row.
+      var lc = [isMe ? "me" : "", cls === "now" ? "is-now" : ""].join(" ").trim();
+      return '<li data-q="' + esc(norm(x.p.name)) + '"' + (lc ? ' class="' + lc + '"' : "") + '><button class="prow slim" data-act="' + (x.p.sub ? "reportopen" : "person") + '" data-name="' + esc(x.p.name) + '"><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : x.p.sub ? "<small>vikarie</small>" : isExtra(x.p) ? "<small>förstärkning</small>" : "") + '</span><span class="pt ' + cls + '">' + x.txt + "</span></button></li>";
     }
     function ul(list) { return '<ul class="plist">' + list.slice().sort(cmp).map(row).join("") + "</ul>"; }
     var atText = chosen ? " kl. " + hhmm(at) : isToday ? " nu" : "";
@@ -1889,17 +1969,21 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }).join("");
 
     if (listOnly) return list;
-    var slider = closed ? "" : '<div class="time-pick"><button class="time-btn" data-act="timeopen" aria-haspopup="dialog"><span class="tp-t">Tid</span><span class="tp-v">' +
-      (chosen ? "Kl. " + hhmm(at) : isToday ? "Nu, " + hhmm(at) : "Hela dagen") + "</span>" + ICON.down + "</button>" +
-      (chosen ? '<button class="text-btn" data-act="peopleat0">' + (isToday ? "Nu" : "Hela dagen") + "</button>" : "") + "</div>";
+    // The time sits under the date and opens the wheels (and the sort order).
+    var timeChip = closed ? "" : '<button class="dn-time" data-act="timeopen" aria-haspopup="dialog" aria-label="Välj tid och ordning">' +
+      (chosen ? "Kl. " + hhmm(at) : isToday ? "Nu " + hhmm(at) : "Hela dagen") + " · " + (sort === "end" ? "efter sluttid" : "efter starttid") + ICON.down + "</button>";
+    var searching = state.peopleSearch || !!q;
     return '<div class="view">' + exampleNote() +
-      '<div class="sec-head kol-head"><h2>Kollegor</h2><div class="head-tools">' + '<button class="icon-btn report-btn" data-act="reportopen" aria-label="Dagsrapport" title="Dagsrapport">' + ICON.report + "</button>" + (isToday ? "" : todayBtn("people0", true)) + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div></div>" +
+      // Three calm rows: the heading with two plain icons, all or by department, and the day.
+      '<div class="sec-head kol-head"><h2>Kollegor</h2><div class="head-tools">' + (isToday ? "" : '<button class="plain-ic" data-act="people0" aria-label="Gå till idag">' + ICON.today + "</button>") +
+      '<button class="plain-ic" data-act="searchtoggle" aria-label="Sök namn" aria-pressed="' + searching + '">' + ICON.search + "</button>" +
+      '<button class="plain-ic" data-act="reportopen" aria-label="Dagsrapport" title="Dagsrapport">' + ICON.report + "</button></div></div>" +
+      (depts ? '<div class="view-seg" role="group" aria-label="Visa"><button data-act="peoplemode" data-m="all" aria-pressed="' + !byDept + '">Alla</button><button data-act="peoplemode" data-m="dept" aria-pressed="' + !!byDept + '">Avdelningar</button></div>' : "") +
       '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + "</button>" +
-      '<span class="dn-mid"><span class="dn-label" data-pslide>' + (off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "") + (off >= -1 && off <= 1 ? DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + "</span></span>" +
+      '<span class="dn-col"><span class="dn-mid"><span class="dn-label" data-pslide>' + (off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "") + (off >= -1 && off <= 1 ? DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + "</span></span>" + timeChip + "</span>" +
       '<button class="dn-arrow" data-act="peopleday" data-d="1" aria-label="Nästa dag">' + ICON.right + "</button></div>" +
-      '<section class="people-sec"><div class="tools"><input id="people-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.peopleQ) + '" autocomplete="off" aria-label="Sök namn">' +
-      '<div class="mini-seg" role="group" aria-label="Sortera på"><button data-act="daysort" data-s="start" aria-pressed="' + (sort === "start") + '" aria-label="Sortera på starttid">Start</button><button data-act="daysort" data-s="end" aria-pressed="' + (sort === "end") + '" aria-label="Sortera på sluttid">Slut</button></div></div>' +
-      (closed && !q ? '<p class="hint">' + esc(closed) + ", förskolan är stängd.</p>" : "") + (q ? "" : slider) +
+      '<section class="people-sec">' + (searching ? '<div class="tools"><input id="people-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.peopleQ) + '" autocomplete="off" aria-label="Sök namn"></div>' : "") +
+      (closed && !q ? '<p class="hint">' + esc(closed) + ", förskolan är stängd.</p>" : "") +
       '<div id="people-list" data-pslide>' + list + '</div><p class="hint" id="people-none" hidden>Inget namn matchar.</p></section></div>';
   }
 
@@ -1987,19 +2071,23 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     SUBS.forEach(function (x) { if (x[0] === sub) title = x[1]; });
     var dl3 = deptList();
     if (sub === "dept") title = dl3 && dl3[state.deptIdx] ? dl3[state.deptIdx].name : "Avdelning";
-    var out = '<div class="view settings sub">' + (DATA.people.length || sub !== "file" ? '<button class="back-btn" data-act="subback">' + ICON.left + "<span>" + (sub === "dept" ? "Avdelningar" : "Inställningar") + "</span></button>" : "") +
+    var first = sub === "file" && !DATA.people.length;
+    if (first) title = "Schemapp";
+    var out = '<div class="view settings sub' + (first ? " first" : "") + '">' + (DATA.people.length || sub !== "file" ? '<button class="back-btn" data-act="subback">' + ICON.left + "<span>" + (sub === "dept" ? "Avdelningar" : "Inställningar") + "</span></button>" : "") +
       '<div class="sec-head"><h2>' + esc(title) + "</h2>" + (sub === "dept" ? '<button class="text-btn" data-act="deptrename" data-i="' + state.deptIdx + '">Byt namn</button>' : "") + "</div>" + settingsMsg();
 
     if (sub === "file") {
       out += '<section class="panel">';
-      if (!DATA.people.length) out += "<p>Ladda upp schemat som Excel-fil för att börja.</p>";
-      else out += '<dl class="kv"><dt>Källa</dt><dd>' + esc(DATA.source || "Okänd") + (DATA.example ? " (exempel)" : "") + "</dd>" +
+      // The first time: what the app is for and the three steps, before the button.
+      if (!DATA.people.length && !state.pending) out += '<ol class="steps"><li>Välj Excel-filen med schemat.</li><li>Välj vilken schemavecka det är.</li><li>Välj vem du är.</li></ol>';
+      else if (DATA.people.length) out += '<dl class="kv"><dt>Källa</dt><dd>' + esc(DATA.source || "Okänd") + (DATA.example ? " (exempel)" : "") + "</dd>" +
         "<dt>Uppdaterad</dt><dd>" + esc(fmtStamp(DATA.updated)) + "</dd><dt>Personer</dt><dd>" + DATA.people.length + "</dd><dt>Upprepas</dt><dd>" + (DATA.weeks === 1 ? "Varje vecka" : "Var " + DATA.weeks + ":e vecka") + "</dd></dl>";
       if (usingLocal && EMBEDDED.people.length) out += '<p class="hint">Det här schemat är bara sparat på den här enheten.</p><div class="btn-row"><button class="btn" data-act="droplocal">Använd det delade schemat</button></div>';
       if (state.pending) {
         var p = state.pending;
         var info = state.pendingInfo || {}, layout = { grid: "dagarna som kolumner", rows: "dagarna som rader", list: "en rad per pass" }[info.kind];
-        out += '<div class="msg ok">Hittade ' + p.people.length + (p.people.length === 1 ? " person och " : " personer och ") + p.weeks + (p.weeks === 1 ? " vecka i " : " veckor i ") + esc(p.source) + (layout ? ", med " + layout : "") + ".</div>" +
+        out += (info.kind === "link" ? '<div class="msg ok">Schemat från länken har ' + p.people.length + " personer och " + p.weeks + (p.weeks === 1 ? " vecka." : " veckor.") + "</div>"
+          : '<div class="msg ok">Hittade ' + p.people.length + (p.people.length === 1 ? " person och " : " personer och ") + p.weeks + (p.weeks === 1 ? " vecka i " : " veckor i ") + esc(p.source) + (layout ? ", med " + layout : "") + ".</div>") +
           '<div class="preview-names">' + p.people.map(function (x) { return '<span class="chip">' + esc(x.name) + "</span>"; }).join("") + "</div>" +
           previewHtml(p) +
           (info.notes && info.notes.length ? '<p class="hint">Text som inte är tider visas som den står: ' + info.notes.slice(0, 6).map(esc).join(", ") + (info.notes.length > 6 ? " med flera" : "") + ".</p>" : "") +
@@ -2011,9 +2099,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
           })() + "</div>" +
           '<div class="btn-row"><button class="btn primary" data-act="save"' + (state.saving ? " disabled" : "") + ">" + (state.saving ? "Sparar..." : "Spara schemat") + '</button><button class="btn" data-act="cancel">Avbryt</button></div>';
       } else {
-        out += '<div class="drop" id="drop"><span>Excel-fil (.xlsx) eller CSV</span><span class="btn primary" aria-hidden="true">Ladda upp schema</span>' +
-          '<input id="file-input" type="file" aria-label="Ladda upp schema" accept=".xlsx,.xls,.xlsm,.ods,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"></div>' +
-          '<div class="btn-row"><button class="btn" data-act="sub" data-s="help">Vilka Excel-filer fungerar?</button></div>';
+        out += '<div class="file-pick" id="drop"><label class="btn primary file-btn">' + (DATA.people.length ? "Välj ny Excel-fil" : "Välj Excel-fil") +
+          '<input id="file-input" type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"></label>' +
+          '<span class="hint">Excel (.xlsx) eller CSV</span></div>' +
+          '<button class="link-btn" data-act="sub" data-s="help">Vilka Excel-filer fungerar?</button>';
+        // Outside claude.ai each phone keeps its own copy: a link carries the schedule to a colleague.
+        if (DATA.people.length && !(window.claude && window.claude.use)) out += '<div class="share-sched"><h3>Dela med kollegor</h3><p class="hint">Den som öppnar länken får schemat direkt, utan Excel-filen.</p>' +
+          '<div class="btn-row"><button class="btn" data-act="sharesched">' + (state.shareMsg || "Dela schemat med en länk") + "</button></div></div>";
       }
       out += "</section>";
     } else if (sub === "plan") {
@@ -2944,6 +3036,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // The note is saved when you leave the field, so typing is not interrupted.
   app.addEventListener("change", function (e) {
     var id = e.target.id;
+    if (id === "report-custom") { writeDay(addDays(today(), state.peopleOff), { text: e.target.value.slice(0, 5000) }, true); return; }
     if (id !== "report-note" && id !== "report-head") return;
     var nd = addDays(today(), state.peopleOff), cur = dayEdit(nd), v = e.target.value.slice(0, id === "report-note" ? 1000 : 80);
     var rec2 = { absent: cur.absent, subs: cur.subs, note: cur.note, title: cur.title };
@@ -2996,14 +3089,20 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "favweek") { slideWeek(+b.getAttribute("data-d"), "fav"); }
     else if (act === "fav0") { var f0 = ocDayFrom(0, 1); if (f0 != null && state.favOffset !== f0) { slideSel = "[data-favslide]"; slideDir = f0 < state.favOffset ? -1 : 1; state.favOffset = f0; render(); buzz(); } }
     else if (act === "peopleat0") { state.peopleAt = null; render(); }
+    else if (act === "searchtoggle") {
+      state.peopleSearch = !(state.peopleSearch || state.peopleQ);
+      if (!state.peopleSearch) state.peopleQ = "";
+      render();
+      var sq2 = document.getElementById("people-q"); if (sq2) sq2.focus();
+    }
     else if (act === "timeopen") { state.timePop = true; render(); var wf = document.getElementById("wh-h"); if (wf) wf.focus({ preventScroll: true }); }
     else if (act === "wheelpick") {
       // Tapping a number above or below the middle turns the wheel to it.
       var wl = b.parentNode, wi = Array.prototype.indexOf.call(wl.children, b);
       wl.scrollTo({ top: wi * WHEEL_ROW, behavior: reduceMotion ? "auto" : "smooth" });
     }
-    else if (act === "reportgo") { state.view = "grid"; lsSet("skift.view", "grid"); state.peopleOff = 0; state.reportNote = null; state.reportTitle = null; state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); window.scrollTo(0, 0); }
-    else if (act === "reportopen") { state.reportNote = null; state.reportTitle = null; state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); }
+    else if (act === "reportgo") { state.reportText = null; state.view = "grid"; lsSet("skift.view", "grid"); state.peopleOff = 0; state.reportNote = null; state.reportTitle = null; state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); window.scrollTo(0, 0); }
+    else if (act === "reportopen") { state.reportNote = null; state.reportTitle = null; state.reportText = null; state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); }
     else if (act === "reportclose") { state.report = false; state.absPop = false; render(); }
     else if (act === "abspick") {
       var ak = b.getAttribute("data-k"), ai = state.absSel.indexOf(ak);
@@ -3062,6 +3161,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }
     else if (act === "subdept") { state.reportForm.dept = +b.getAttribute("data-i"); render(); }
     else if (act === "rcustom") { state.reportCustom = !state.reportCustom; render(); }
+    else if (act === "rtextedit" || act === "rtextreset") {
+      var ed = addDays(today(), state.peopleOff);
+      state.reportText = null; state.reportCopied = false;
+      writeDay(ed, { text: act === "rtextedit" ? reportPlain(reportText(personByName(state.profile), ed, state.reportNote)) : "" });
+      if (act === "rtextedit") { var ce = document.getElementById("report-custom"); if (ce) ce.focus(); }
+    }
     else if (act === "rfull") { state.reportFull = !state.reportFull; render(); }
     else if (act === "titlesave" || act === "titlereset") {
       var td = addDays(today(), state.peopleOff), hv = document.getElementById("report-head"), base = "";
@@ -3112,7 +3217,14 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "ocday") { slideWeek(+b.getAttribute("data-d"), "oc"); }
     else if (act === "week0") { var w0 = state.weekOffset; if (w0) stepWeek(-w0); }
     else if (act === "cancel") { state.pending = null; state.msg = null; render(); }
-    else if (act === "save" && state.pending && !state.saving) { save(state.pending, "Schemat är sparat och visas nu för alla som öppnar appen."); }
+    else if (act === "sharesched") { shareSchedule(); }
+    else if (act === "save" && state.pending && !state.saving) {
+      // Department names, moves and renames that came with a shared link.
+      if (state.pendingEdit) {
+        ["names", "moves", "people", "extra"].forEach(function (k) { DEPT_EDIT[k] = Object.assign({}, DEPT_EDIT[k] || {}, state.pendingEdit[k] || {}); });
+        if (!dbRef) lsSet("skift.depts", JSON.stringify(DEPT_EDIT));
+        state.pendingEdit = null;
+      } save(state.pending, "Schemat är sparat och visas nu för alla som öppnar appen."); }
     else if (act === "pendweek" && state.pending) { state.pending.anchor = ymd(addDays(mondayOf(today()), -(+b.getAttribute("data-w")) * 7)); render(); }
     else if (act === "setweek" && !state.saving) {
       var w = +b.getAttribute("data-w");
@@ -3150,10 +3262,18 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
   app.addEventListener("input", function (e) {
     if (e.target.id === "pick-q") { state.pickQ = e.target.value; filterPicker(state.pickQ); return; }
+    if (e.target.id === "report-custom") {
+      state.reportText = e.target.value; state.reportCopied = false;
+      var rc = document.getElementById("report-text"), rph = document.getElementById("report-preview");
+      if (rc) rc.value = e.target.value;
+      if (rph) rph.innerHTML = customHtml(e.target.value);
+      return;
+    }
     if (e.target.id === "report-note" || e.target.id === "report-head") {
       if (e.target.id === "report-note") state.reportNote = e.target.value; else state.reportTitle = e.target.value;
       state.reportCopied = false;
       var rt = document.getElementById("report-text");
+      if (dayEdit(addDays(today(), state.peopleOff)).text) return;
       var rtx = reportText(personByName(state.profile), addDays(today(), state.peopleOff), state.reportNote), rpv = document.getElementById("report-preview");
       if (rt) rt.value = reportPlain(rtx);
       if (rpv) rpv.innerHTML = reportHtml(rtx);
@@ -3203,6 +3323,50 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (c !== wasCover) { wasCover = c; if (c) cover = { day: 0, week: 0, team: 0 }; render(); }
     }, 150);
   });
+
+  // ---------- Sharing the schedule as a link ----------
+  // The schedule (and department names, moves and renames) packed into the address after #schema=,
+  // compressed where the phone can. Opening the link shows it like an uploaded file, ready to save.
+  function b64url(bytes) { var s = ""; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64url(t) { var s = atob(t.replace(/-/g, "+").replace(/_/g, "/")), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+  function streamBytes(bytes, stream) { return new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer().then(function (b) { return new Uint8Array(b); }); }
+  function packSchedule() {
+    var d = { weeks: DATA.weeks, anchor: DATA.anchor, breakMin: DATA.breakMin, depts: DATA.depts, people: DATA.people.map(function (p) { var x = { name: p.orig || p.name, shifts: p.shifts }; if (p.extras) x.extras = p.extras; if (p.dept != null) x.dept = p.dept; return x; }) };
+    var raw = new TextEncoder().encode(JSON.stringify({ d: d, e: { names: DEPT_EDIT.names, moves: DEPT_EDIT.moves, people: DEPT_EDIT.people, extra: DEPT_EDIT.extra } }));
+    if (window.CompressionStream) return streamBytes(raw, new CompressionStream("deflate-raw")).then(function (z) { return "z" + b64url(z); });
+    return Promise.resolve("p" + b64url(raw));
+  }
+  function unpackSchedule(t) {
+    var bytes = unb64url(t.slice(1));
+    var p = t.charAt(0) === "z" ? (window.DecompressionStream ? streamBytes(bytes, new DecompressionStream("deflate-raw")) : Promise.reject()) : Promise.resolve(bytes);
+    return p.then(function (b) { return JSON.parse(new TextDecoder().decode(b)); });
+  }
+  function shareSchedule() {
+    packSchedule().then(function (code) {
+      var url = location.href.split("#")[0] + "#schema=" + code;
+      var done = function (msg) { state.shareMsg = msg; render(); setTimeout(function () { state.shareMsg = null; render(); }, 2500); };
+      if (navigator.share) navigator.share({ title: "Schemapp", text: "Schemat i Schemapp", url: url }).then(null, function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { done("Länken är kopierad"); }, function () {});
+    });
+  }
+  (function openSharedLink() {
+    var m = location.hash.match(/^#schema=([pz][A-Za-z0-9_-]+)/);
+    if (!m) return;
+    history.replaceState(null, "", location.href.split("#")[0]);
+    unpackSchedule(m[1]).then(function (x) {
+      var d = x && x.d;
+      if (!d || !Array.isArray(d.people) || !d.people.length) throw 0;
+      state.pending = { example: false, source: "Delad länk", updated: new Date().toISOString(), weeks: d.weeks, anchor: d.anchor, breakMin: d.breakMin != null ? d.breakMin : 30, minStaff: DATA.minStaff, depts: d.depts, people: d.people };
+      state.pendingInfo = { kind: "link", notes: [] };
+      state.pendingEdit = x.e || null;
+      state.view = "settings"; state.sub = "file"; state.picking = false;
+      render();
+    }).then(null, function () {
+      state.view = "settings"; state.sub = "file";
+      state.msg = { ok: false, text: "Länken kunde inte läsas. Be om en ny länk eller ladda upp Excel-filen." };
+      render();
+    });
+  })();
 
   initDb();
   render();
