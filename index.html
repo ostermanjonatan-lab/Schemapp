@@ -970,19 +970,30 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
 
   // ---------- Who opens and closes ----------
+  // How many close: the ones who end last, even if one goes five minutes earlier. Set under Inställningar.
+  function closersN() { return DATA.closers == null ? 2 : DATA.closers; }
+  function lastOut(list, n) {
+    var sorted = list.slice().sort(function (a, b) { return b.e - a.e; });
+    if (!sorted.length) return [];
+    var cut = sorted[Math.min(n, sorted.length) - 1].e;
+    return sorted.filter(function (x) { return x.e >= cut; });
+  }
   function openClose(d) {
-    var open = null, close = null, working = 0;
+    var open = null, ends = [], working = 0;
     DATA.people.forEach(function (p) {
       var s = shiftOn(p, d);
       if (s.kind !== "work") return;
       working++;
       var st = s.ranges[0].s, en = s.ranges[s.ranges.length - 1].e;
       if (!open || st < open.min) open = { min: st, names: [p.name] }; else if (st === open.min) open.names.push(p.name);
-      if (!close || en > close.min) close = { min: en, names: [p.name] }; else if (en === close.min) close.names.push(p.name);
+      ends.push({ name: p.name, e: en });
     });
     if (!open) return null;
+    var hi = Math.max.apply(null, ends.map(function (x) { return x.e; }));
+    var atHi = ends.filter(function (x) { return x.e === hi; });
     // When most of the staff end at the same time it is a staff meeting (APT), not a closing shift.
-    close.apt = close.names.length >= Math.max(5, working / 2);
+    var apt = atHi.length >= Math.max(5, working / 2);
+    var close = { min: hi, apt: apt, names: (apt ? atHi : lastOut(ends, closersN())).map(function (x) { return x.name; }) };
     return { open: open, close: close };
   }
   function closeNames(close, me) { return close.apt ? "APT (" + close.names.length + " personer)" : namesText(close.names, me); }
@@ -1170,7 +1181,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (timed.length) {
         var lo = Math.min.apply(null, timed.map(function (r) { return r.s; })), hi = Math.max.apply(null, timed.map(function (r) { return r.e; }));
         var names = function (f) { return timed.filter(f).map(function (r) { return r.name; }).join(", "); };
-        out.push("", "Öppnar: " + names(function (r) { return r.s === lo; }), "Stänger: " + names(function (r) { return r.e === hi; }));
+        var closing = lastOut(timed, closersN()).map(function (r) { return r.name; }).join(", ");
+        out.push("", "Öppnar: " + names(function (r) { return r.s === lo; }), "Stänger: " + closing);
       }
     }
     var shown = rows.filter(function (r) { return r.sub ? o.subs : o.regular; }).sort(function (a, b) { return a.s - b.s || a.name.localeCompare(b.name, "sv"); });
@@ -2061,6 +2073,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       '<div class="set-inline"><div class="si-l"><span class="si-t">Schemavecka</span><span class="si-s">Vecka ' + isoWeek(t) + " just nu</span></div>" +
       '<div class="mini-seg" role="group" aria-label="Schemavecka nu">';
     for (var w = 0; w < DATA.weeks; w++) out += '<button data-act="setweek" data-w="' + w + '" aria-pressed="' + (w === curW) + '">' + (w + 1) + "</button>";
+    out += '</div></div><div class="set-inline"><div class="si-l"><span class="si-t">Stänger</span><span class="si-s">Antal som räknas som stängare</span></div><div class="mini-seg" role="group" aria-label="Antal som stänger">';
+    [1, 2, 3].forEach(function (n) { out += '<button data-act="setclosers" data-n="' + n + '" aria-pressed="' + (n === closersN()) + '"' + ' aria-label="' + n + (n === 1 ? " person" : " personer") + '">' + n + "</button>"; });
     out += '</div></div><div class="set-inline"><div class="si-l"><span class="si-t">Rast</span><span class="si-s">Minuter per pass</span></div><div class="mini-seg" role="group" aria-label="Rast i minuter">';
     [0, 30, 45, 60].forEach(function (m) { out += '<button data-act="setbreak" data-m="' + m + '" aria-pressed="' + (m === breakMin()) + '"' + (m ? ' aria-label="' + m + ' minuter"' : "") + ">" + (m ? m : "Ingen") + "</button>"; });
     out += "</div></div></section>";
@@ -2758,7 +2772,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       var cw = DATA.weeks === pick.weeks ? rotWeek(today()) : 0;
       anchor = ymd(addDays(mondayOf(today()), -cw * 7));
     }
-    return { example: false, source: filename, updated: new Date().toISOString(), weeks: pick.weeks, anchor: anchor, breakMin: breakMin(), minStaff: DATA.minStaff,  people: pick.people, depts: pick.depts, kind: pick.kind };
+    return { example: false, source: filename, updated: new Date().toISOString(), weeks: pick.weeks, anchor: anchor, breakMin: breakMin(), closers: DATA.closers, minStaff: DATA.minStaff,  people: pick.people, depts: pick.depts, kind: pick.kind };
   }
   function joinWeeks(results) {
     var names = [], map = {}, xmap = {};
@@ -3244,6 +3258,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "pname" && state.person) { state.deptPop = { kind: "pname", name: state.person.name }; render(); var pi = document.getElementById("dept-name"); if (pi) { pi.focus(); pi.select(); } }
     else if (act === "deptclose") { state.deptPop = null; render(); }
     else if (act === "setplan") { var ph = b.getAttribute("data-h"); state.planOpen = null; writePlan(b.getAttribute("data-name"), ph === "" ? null : +ph); }
+    else if (act === "setclosers" && !state.saving) {
+      var cn = +b.getAttribute("data-n");
+      if (cn === closersN()) return;
+      var nc = JSON.parse(JSON.stringify(DATA));
+      nc.closers = cn; nc.updated = new Date().toISOString();
+      save(nc, cn === 1 ? "Den som slutar sist räknas nu som stängare." : "De " + cn + " som slutar sist räknas nu som stängare.");
+    }
     else if (act === "setbreak" && !state.saving) {
       var bm = +b.getAttribute("data-m");
       if (bm === breakMin()) return;
@@ -3333,7 +3354,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   function unb64url(t) { var s = atob(t.replace(/-/g, "+").replace(/_/g, "/")), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
   function streamBytes(bytes, stream) { return new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer().then(function (b) { return new Uint8Array(b); }); }
   function packSchedule() {
-    var d = { weeks: DATA.weeks, anchor: DATA.anchor, breakMin: DATA.breakMin, depts: DATA.depts, people: DATA.people.map(function (p) { var x = { name: p.orig || p.name, shifts: p.shifts }; if (p.extras) x.extras = p.extras; if (p.dept != null) x.dept = p.dept; return x; }) };
+    var d = { weeks: DATA.weeks, anchor: DATA.anchor, breakMin: DATA.breakMin, closers: DATA.closers, depts: DATA.depts, people: DATA.people.map(function (p) { var x = { name: p.orig || p.name, shifts: p.shifts }; if (p.extras) x.extras = p.extras; if (p.dept != null) x.dept = p.dept; return x; }) };
     var raw = new TextEncoder().encode(JSON.stringify({ d: d, e: { names: DEPT_EDIT.names, moves: DEPT_EDIT.moves, people: DEPT_EDIT.people, extra: DEPT_EDIT.extra } }));
     if (window.CompressionStream) return streamBytes(raw, new CompressionStream("deflate-raw")).then(function (z) { return "z" + b64url(z); });
     return Promise.resolve("p" + b64url(raw));
@@ -3358,7 +3379,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     unpackSchedule(m[1]).then(function (x) {
       var d = x && x.d;
       if (!d || !Array.isArray(d.people) || !d.people.length) throw 0;
-      state.pending = { example: false, source: "Delad länk", updated: new Date().toISOString(), weeks: d.weeks, anchor: d.anchor, breakMin: d.breakMin != null ? d.breakMin : 30, minStaff: DATA.minStaff, depts: d.depts, people: d.people };
+      state.pending = { example: false, source: "Delad länk", updated: new Date().toISOString(), weeks: d.weeks, anchor: d.anchor, breakMin: d.breakMin != null ? d.breakMin : 30, closers: d.closers, minStaff: DATA.minStaff, depts: d.depts, people: d.people };
       state.pendingInfo = { kind: "link", notes: [] };
       state.pendingEdit = x.e || null;
       state.view = "settings"; state.sub = "file"; state.picking = false;
