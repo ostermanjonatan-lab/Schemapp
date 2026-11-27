@@ -380,6 +380,11 @@ a.btn { text-decoration: none; color: var(--ink); }
 .day-nav .dn-arrow svg { width: 16px; height: 16px; stroke: var(--ink); }
 /* The date has the whole width between the arrows; the button back to today sits in the heading. */
 .head-tools { display: flex; align-items: center; gap: 6px; }
+.time-pick { display: flex; flex-direction: column; gap: 2px; }
+.tp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
+.tp-label { font-weight: 600; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
+.time-pick input[type=range] { width: 100%; margin: 0; height: 32px; accent-color: var(--accent); cursor: pointer; }
+.tp-scale { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .tools { display: flex; gap: 8px; align-items: center; }
 .tools .search { flex: 1; min-width: 0; }
 .mini-seg { display: flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--accent-soft); flex: none; height: 48px; }
@@ -607,6 +612,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     peopleMode: lsGet("skift.peoplemode") === "dept" || lsGet("skift.daymode") === "dept" ? "dept" : "all",
     daySort: lsGet("skift.daysort") === "end" ? "end" : "start",
     peopleOff: 0,
+    peopleAt: null,
     favQ: "",
     planQ: "",
     deptIdx: 0,
@@ -1471,13 +1477,21 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (next == null) return;
     state.peopleOff = next; slideSel = "[data-pslide]"; slideDir = n; render(); buzz();
   }
-  function renderPeople(me) {
-    // Another day (swipe or the arrows): no "now" there, so everyone working is one group.
-    var off = state.peopleOff, isToday = off === 0, t = addDays(today(), off), now = nowMinutes(), depts = deptList(), byDept = depts && state.peopleMode === "dept";
+  // The time slider: the day's working hours, whole half hours at the ends.
+  function dayHours(t) {
+    var lo = 24 * 60, hi = 0;
+    DATA.people.forEach(function (p) { var s = shiftOn(p, t); if (s.kind === "work") { lo = Math.min(lo, s.ranges[0].s); hi = Math.max(hi, s.ranges[s.ranges.length - 1].e); } });
+    return hi > lo ? { lo: Math.floor(lo / 30) * 30, hi: Math.ceil(hi / 30) * 30 } : { lo: 6 * 60, hi: 18 * 60 };
+  }
+  function renderPeople(me, listOnly) {
+    // Who works at a moment: now today, or the time chosen with the slider. Another day without
+    // a chosen time has no moment, so everyone working is one group.
+    var off = state.peopleOff, isToday = off === 0, t = addDays(today(), off), depts = deptList(), byDept = depts && state.peopleMode === "dept";
+    var at = state.peopleAt != null ? state.peopleAt : isToday ? nowMinutes() : null, chosen = state.peopleAt != null, now = at;
     var sort = state.daySort === "end" ? "end" : "start", q = norm(state.peopleQ || "").trim(), closed = closedDay(t);
     var all = DATA.people.map(function (p) {
       var s = shiftOn(p, t), st = 3, txt;
-      if (s.kind === "work" && !isToday) { st = 0; txt = rangeText(s); }
+      if (s.kind === "work" && at == null) { st = 0; txt = rangeText(s); }
       else if (s.kind === "work") {
         var cur = s.ranges.some(function (r) { return now >= r.s && now < r.e; }), next = s.ranges.some(function (r) { return now < r.s; });
         st = cur ? 0 : next ? 1 : 2; txt = rangeText(s);
@@ -1489,18 +1503,19 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     function timeKey(x) { return x.st === 3 ? 0 : x.st === 2 ? -x.s.ranges[x.s.ranges.length - 1].e : sort === "end" ? x.s.ranges[x.s.ranges.length - 1].e : x.s.ranges[0].s; }
     function cmp(a, b) { return a.st - b.st || timeKey(a) - timeKey(b) || byName(a, b); }
     function row(x) {
-      var isMe = me && me.name === x.p.name, cls = x.st === 0 ? (isToday ? "now" : "work") : x.st === 3 ? (x.s.kind === "note" ? "note" : "past") : x.st === 2 ? "past" : "work";
+      var isMe = me && me.name === x.p.name, cls = x.st === 0 ? (at != null ? "now" : "work") : x.st === 3 ? (x.s.kind === "note" ? "note" : "past") : x.st === 2 ? "past" : "work";
       return '<li data-q="' + esc(norm(x.p.name)) + '"' + (isMe ? ' class="me"' : "") + '><button class="prow slim" data-act="person" data-name="' + esc(x.p.name) + '"><span class="pn">' + esc(x.p.name) + (isMe ? "<small>du</small>" : "") + '</span><span class="pt ' + cls + '">' + x.txt + "</span></button></li>";
     }
     function ul(list) { return '<ul class="plist">' + list.slice().sort(cmp).map(row).join("") + "</ul>"; }
-    var STATES = [isToday ? "Jobbar nu" : "Jobbar", "Har inte börjat", "Har slutat", "Lediga och frånvarande"], list;
+    var atText = chosen ? " kl. " + hhmm(at) : isToday ? " nu" : "";
+    var STATES = ["Jobbar" + atText, chosen ? "Börjar senare" : "Har inte börjat", chosen ? "Har redan gått" : "Har slutat", "Lediga och frånvarande"], list;
     if (q) list = '<ul class="plist">' + all.slice().sort(byName).map(row).join("") + "</ul>";
     else if (byDept) {
       var groups = deptOrder(me, depts).map(function (i) { return { name: depts[i].name, idx: i, xs: all.filter(function (x) { return deptOf(x.p) === i; }) }; });
       groups.push({ name: "Utan avdelning", xs: all.filter(function (x) { return deptOf(x.p) == null; }) });
       list = groups.filter(function (g) { return g.xs.length; }).map(function (g) {
         var n = g.xs.filter(function (x) { return x.st === 0; }).length;
-        return '<section class="pgroup">' + deptHead(g.name, closed ? g.xs.length + " personer" : n + " av " + g.xs.length + (isToday ? " jobbar nu" : " jobbar")) + ul(g.xs) + "</section>";
+        return '<section class="pgroup">' + deptHead(g.name, closed ? g.xs.length + " personer" : n + " av " + g.xs.length + " jobbar" + atText) + ul(g.xs) + "</section>";
       }).join("");
     } else if (closed) list = '<ul class="plist">' + all.slice().sort(byName).map(row).join("") + "</ul>";
     else list = STATES.map(function (title, st) {
@@ -1508,6 +1523,12 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       return xs.length ? '<section class="pgroup"><div class="sec-head"><h2>' + title + ' <span class="cnt">' + xs.length + "</span></h2></div>" + ul(xs) + "</section>" : "";
     }).join("");
 
+    if (listOnly) return list;
+    var hr = dayHours(t), val = at != null ? Math.max(hr.lo, Math.min(hr.hi, at)) : hr.lo;
+    var slider = closed ? "" : '<div class="time-pick"><div class="tp-row"><span class="tp-label" id="tp-label">' + (chosen ? "Kl. " + hhmm(at) : isToday ? "Nu, " + hhmm(at) : "Hela dagen") + "</span>" +
+      '<button class="text-btn" id="tp-reset" data-act="peopleat0"' + (chosen ? "" : " hidden") + ">" + (isToday ? "Nu" : "Hela dagen") + "</button></div>" +
+      '<input id="people-at" type="range" min="' + hr.lo + '" max="' + hr.hi + '" step="15" value="' + val + '" aria-label="Visa vilka som jobbar vid en viss tid" aria-valuetext="' + hhmm(val) + '">' +
+      '<div class="tp-scale" aria-hidden="true"><span>' + hhmm(hr.lo) + "</span><span>" + hhmm(hr.hi) + "</span></div></div>";
     return '<div class="view">' + exampleNote() +
       '<div class="sec-head"><h2>Kollegor</h2><div class="head-tools">' + (isToday ? "" : todayBtn("people0", true)) + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div></div>" +
       '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + "</button>" +
@@ -1515,7 +1536,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       '<button class="dn-arrow" data-act="peopleday" data-d="1" aria-label="Nästa dag">' + ICON.right + "</button></div>" +
       '<section class="people-sec"><div class="tools"><input id="people-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.peopleQ) + '" autocomplete="off" aria-label="Sök namn">' +
       '<div class="mini-seg" role="group" aria-label="Sortera på"><button data-act="daysort" data-s="start" aria-pressed="' + (sort === "start") + '" aria-label="Sortera på starttid">Start</button><button data-act="daysort" data-s="end" aria-pressed="' + (sort === "end") + '" aria-label="Sortera på sluttid">Slut</button></div></div>' +
-      (closed && !q ? '<p class="hint">' + esc(closed) + ", förskolan är stängd.</p>" : "") +
+      (closed && !q ? '<p class="hint">' + esc(closed) + ", förskolan är stängd.</p>" : "") + (q ? "" : slider) +
       '<div id="people-list" data-pslide>' + list + '</div><p class="hint" id="people-none" hidden>Inget namn matchar.</p></section></div>';
   }
 
@@ -2562,6 +2583,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "week") { slideWeek(+b.getAttribute("data-d")); }
     else if (act === "favweek") { slideWeek(+b.getAttribute("data-d"), "fav"); }
     else if (act === "fav0") { var f0 = ocDayFrom(0, 1); if (f0 != null && state.favOffset !== f0) { slideSel = "[data-favslide]"; slideDir = f0 < state.favOffset ? -1 : 1; state.favOffset = f0; render(); buzz(); } }
+    else if (act === "peopleat0") { state.peopleAt = null; render(); }
     else if (act === "peopleday") { slideWeek(+b.getAttribute("data-d"), "people"); }
     else if (act === "people0") { if (state.peopleOff) { slideSel = "[data-pslide]"; slideDir = state.peopleOff > 0 ? -1 : 1; state.peopleOff = 0; render(); buzz(); } }
     else if (act === "oc0") { var o0 = ocDayFrom(0, 1); if (o0 != null && state.ocOffset !== o0) { slideSel = "[data-ocslide]"; slideDir = o0 < state.ocOffset ? -1 : 1; state.ocOffset = o0; render(); buzz(); } }
@@ -2606,6 +2628,18 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
   app.addEventListener("input", function (e) {
     if (e.target.id === "pick-q") { state.pickQ = e.target.value; filterPicker(state.pickQ); return; }
+    // Dragging the time: only the list and the label change, so the slider keeps the finger.
+    if (e.target.id === "people-at") {
+      state.peopleAt = +e.target.value;
+      e.target.setAttribute("aria-valuetext", hhmm(state.peopleAt));
+      var pl = document.getElementById("people-list"), lb = document.getElementById("tp-label");
+      if (pl) pl.innerHTML = renderPeople(personByName(state.profile), true);
+      if (lb) lb.textContent = "Kl. " + hhmm(state.peopleAt);
+      var rs = document.getElementById("tp-reset"); if (rs) rs.hidden = false;
+      if (state.peopleQ) filterList(state.peopleQ, "#people-list", "people-none");
+      if (state.peopleAt % 60 === 0) buzz();
+      return;
+    }
     if (e.target.id === "fav-q") { state.favQ = e.target.value; filterList(state.favQ, "#fav-list", "fav-none"); return; }
     if (e.target.id === "plan-q") { state.planQ = e.target.value; filterList(state.planQ, "#plan-list", "plan-none"); return; }
     if (e.target.id === "people-q") { var hadQ = !!state.peopleQ.trim(); state.peopleQ = e.target.value; if (hadQ !== !!state.peopleQ.trim()) render(); else filterList(state.peopleQ, "#people-list", "people-none"); return; }
@@ -2631,7 +2665,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
 
   // Keep "pågår / börjar om" current.
-  setInterval(function () { if (state.view !== "settings" && !state.picking && !state.edit) render(); }, 60000);
+  setInterval(function () { if (state.view !== "settings" && !state.picking && !state.edit && document.activeElement.id !== "people-at") render(); }, 60000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden && state.view !== "settings" && !state.edit) render(); });
   // Re-check on resize (folding/unfolding); return to the card each time the cover screen comes back.
   var resizeT;
