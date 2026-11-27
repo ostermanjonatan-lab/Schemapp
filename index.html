@@ -1100,21 +1100,21 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }
     var shown = rows.filter(function (r) { return r.sub ? o.subs : o.regular; }).sort(function (a, b) { return a.s - b.s || a.name.localeCompare(b.name, "sv"); });
     var line = function (r) { return r.name + (o.times && r.txt ? " " + r.txt : "") + (r.sub ? " (vikarie)" : ""); };
+    // Who is away, as "Eva, VAB". Per department they stay in their own department, last.
+    var awayRows = o.absent ? Object.keys(rec.absent).map(function (k) {
+      var p = DATA.people.filter(function (x) { return keyOf(x) === k; })[0];
+      if (!p || !inScope(deptOf(p))) return null;
+      var w = absenceName(rec.absent[k]);
+      return { name: p.name, dept: deptOf(p), text: p.name + ", " + (w === "VAB" ? w : w.charAt(0).toLowerCase() + w.slice(1)) };
+    }).filter(Boolean).sort(function (a, b) { return a.name.localeCompare(b.name, "sv"); }) : [];
     if (o.depts && dl) {
       deptOrder(me, dl).concat([null]).forEach(function (i) {
-        var xs = shown.filter(function (r) { return r.dept === i; });
-        if (xs.length) out.push("", BOLD + (i == null ? "Utan avdelning" : dl[i].name) + BOLD, xs.map(line).join("\n"));
+        var xs = shown.filter(function (r) { return r.dept === i; }).map(line).concat(awayRows.filter(function (r) { return r.dept === i; }).map(function (r) { return r.text; }));
+        if (xs.length) out.push("", BOLD + (i == null ? "Utan avdelning" : dl[i].name) + BOLD, xs.join("\n"));
       });
-    } else if (shown.length) out.push("", "På jobbet", shown.map(line).join("\n"));
-    if (o.absent) {
-      var ab = Object.keys(rec.absent).map(function (k) {
-        var p = DATA.people.filter(function (x) { return keyOf(x) === k; })[0];
-        if (!p || !inScope(deptOf(p))) return null;
-        var why = ABSENCE.filter(function (a) { return a[0] === rec.absent[k]; })[0];
-        var w = why ? why[1] : rec.absent[k];
-        return p.name + ", " + (w === "VAB" ? w : w.charAt(0).toLowerCase() + w.slice(1));
-      }).filter(Boolean).sort(function (a, b) { return a.localeCompare(b, "sv"); });
-      if (ab.length) out.push("", "Frånvarande", ab.join("\n"));
+    } else {
+      if (shown.length) out.push("", "På jobbet", shown.map(line).join("\n"));
+      if (awayRows.length) out.push("", "Frånvarande", awayRows.map(function (r) { return r.text; }).join("\n"));
     }
     // Your own text goes last, as written.
     note = (note != null ? note : rec.note || "").trim();
