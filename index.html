@@ -446,11 +446,7 @@ html.lock { overflow: hidden; }
 .sub-time { flex: none; min-height: 44px; padding: 0 10px 0 12px; }
 .sub-time .tp-v { white-space: nowrap; }
 .rp-past { display: flex; flex-direction: column; gap: 2px; }
-.rp-pastlist { list-style: none; margin: 0; padding: 0; }
-.rp-pastlist li + li { border-top: 1px solid var(--line); }
-.rp-pastlist button { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; padding: 0 4px; background: none; border: 0; font: inherit; font-size: var(--fs-md); color: var(--ink); text-align: left; cursor: pointer; border-radius: 8px; }
-.rp-pastlist button small { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rp-pastlist button[aria-pressed="true"], .rp-pastlist button:active { background: var(--accent-soft); }
+.rp-pastlist { margin-top: -2px; }
 .mini-seg.rp-deptseg { height: auto; display: grid; grid-template-columns: repeat(2, 1fr); }
 .rp-deptseg button { height: 38px; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-seg.p-away { margin: 4px 0 2px; height: auto; display: grid; grid-template-columns: repeat(3, 1fr); }
@@ -1261,9 +1257,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       '<section class="rp-sec"><h4>Frånvaro</h4>' + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn" data-act="absadd">Lägg till frånvaro</button></section>' +
       '<section class="rp-sec"><h4>Vikarier idag</h4>' + (subs ? '<ul class="rp-list">' + subs + "</ul>" : "") +
         // Substitutes from before as plain rows (name, hours and department last time); a tap fills in the form.
-        (past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><ul class="rp-pastlist">' + past.slice(0, 6).map(function (x) {
-          return '<li><button data-act="subpast" data-n="' + esc(x.name) + '" data-t="' + esc(x.time || "") + '" data-d="' + (x.dept == null ? "" : x.dept) + '"' + (norm(f.name || "") === norm(x.name) ? ' aria-pressed="true"' : "") + '><span>' + esc(x.name) + '</span><small>' +
-            esc([x.time || "", dl && x.dept != null && dl[x.dept] ? dl[x.dept].name : ""].filter(Boolean).join(" · ")) + "</small></button></li>";
+        (past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><ul class="check-list rp-pastlist">' + past.slice(0, 6).map(function (x) {
+          return '<li><button data-act="subpast" data-n="' + esc(x.name) + '" aria-pressed="' + (norm(f.name || "") === norm(x.name)) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>";
         }).join("") + "</ul></div>" : "") +
         '<div class="rp-form"><input id="sub-name" type="text" placeholder="Namn" autocomplete="off" value="' + esc(f.name || "") + '" aria-label="Vikariens namn">' +
         '<button class="time-btn sub-time" data-act="subtimeopen" aria-haspopup="dialog"><span class="tp-v">' + (f.s != null ? hhmm(f.s) + "–" + hhmm(f.e) : "Välj tid") + "</span>" + ICON.down + "</button></div>" +
@@ -1480,6 +1475,41 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }
     patchChildren(a, b);
   }
+  // ---------- The phone's back button ----------
+  // Each open layer (a tab other than Mitt schema, a settings page, a sheet, a popup) gets a place in
+  // the browser history, so the back button closes the top one instead of leaving the app.
+  var histLevel = 0, skipPops = 0;
+  function uiLevel() {
+    var n = 0;
+    if (state.view !== "home") n++;
+    if (state.view === "settings" && state.sub) n += state.sub === "dept" ? 2 : 1;
+    if (state.report) n++;
+    if (state.person) n++;
+    if (state.edit) n++;
+    ["planOpen", "deptPop", "timePop", "absPop", "otherPop", "subTimePop"].forEach(function (k) { if (state[k]) n++; });
+    return n;
+  }
+  function syncHistory() {
+    var l = uiLevel();
+    while (histLevel < l) { history.pushState({ schemapp: ++histLevel }, ""); }
+    if (histLevel > l) { skipPops++; var back = histLevel - l; histLevel = l; history.go(-back); }
+  }
+  function closeTop() {
+    var pops = ["subTimePop", "absPop", "otherPop", "timePop", "planOpen", "deptPop"];
+    for (var i = 0; i < pops.length; i++) if (state[pops[i]]) { state[pops[i]] = pops[i] === "planOpen" || pops[i] === "deptPop" || pops[i] === "otherPop" ? null : false; return; }
+    if (state.edit) { state.edit = null; return; }
+    if (state.person) { state.person = null; return; }
+    if (state.report) { state.report = false; return; }
+    if (state.view === "settings" && state.sub) { state.sub = state.sub === "dept" ? "depts" : null; state.msg = null; return; }
+    if (state.view !== "home") { state.view = "home"; state.sub = null; lsSet("skift.view", "home"); }
+  }
+  window.addEventListener("popstate", function () {
+    if (skipPops) { skipPops--; return; }
+    histLevel = Math.max(0, histLevel - 1);
+    closeTop();
+    render();
+  });
+
   // While a sheet or popup is open the page behind it stays still, and where it was.
   var lockedAt = null;
   function lockPage(on) {
@@ -1526,6 +1556,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var oldDeck = document.getElementById("deck"), deckTop = oldDeck ? oldDeck.scrollTop : 0;
     var oldSheet = app.querySelector(".sheet"), sheetTop = oldSheet ? oldSheet.scrollTop : 0, sheetKind = state.edit ? "edit" : state.person ? "person" : "";
     morph(app, html);
+    syncHistory();
     lockPage(!!(state.report || state.person || state.edit || state.planOpen || state.deptPop || state.timePop || state.absPop || state.otherPop || state.subTimePop));
     var newDeck = document.getElementById("deck");
     if (newDeck && oldDeck) newDeck.scrollTop = deckTop;
@@ -3170,10 +3201,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       state.reportErr = null; state.reportCopied = false; writeDay(rd, nr);
     }
     else if (act === "subpast") {
-      // A substitute from before: name, hours and department as last time, ready to add or change.
-      var pt = parseShift(b.getAttribute("data-t") || ""), pdv = b.getAttribute("data-d");
-      state.reportForm = { name: b.getAttribute("data-n"), dept: pdv === "" ? null : +pdv };
-      if (pt.kind === "work" && pt.ranges.length) { state.reportForm.s = pt.ranges[0].s; state.reportForm.e = pt.ranges[pt.ranges.length - 1].e; }
+      // A substitute from before: only the name is filled in; hours and department are chosen for today.
+      // Tapping the chosen name again clears it.
+      var pn2 = b.getAttribute("data-n");
+      state.reportForm = norm(state.reportForm.name || "") === norm(pn2) ? {} : { name: pn2 };
       render();
     }
     else if (act === "subtimeopen") { state.subTimePop = true; render(); }
