@@ -371,6 +371,9 @@ a.btn { text-decoration: none; color: var(--ink); }
 .mode-switch .opt { display: grid; place-items: center; height: 34px; min-width: 40px; padding: 0 12px; border-radius: 9px; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); white-space: nowrap; }
 .mode-switch .opt.on { background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 2px rgba(23, 13, 28, 0.2); }
 .mode-switch svg { width: 18px; height: 18px; stroke: var(--muted); }
+.sort-ctl { align-items: center; margin-top: calc(var(--space-inner) - var(--space-section)); }
+.sort-ctl span { font-size: var(--fs-sm); color: var(--muted); margin-right: 4px; }
+.seg-ctl.sort-ctl button { height: 34px; padding: 0 12px; font-family: var(--font-body); font-size: var(--fs-sm); }
 .prow .pt.now { color: var(--ink); font-weight: 600; }
 .prow .pt.past { opacity: 0.7; }
 .sec-head h2 .cnt { font-weight: 500; color: var(--muted); font-size: var(--fs-md); margin-left: 4px; }
@@ -571,6 +574,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     view: lsGet("skift.view") || "home",
     dayMode: lsGet("skift.daymode") === "dept" ? "dept" : "all",
     peopleMode: lsGet("skift.peoplemode") === "dept" ? "dept" : "all",
+    daySort: lsGet("skift.daysort") === "end" ? "end" : "start",
     profile: lsGet("skift.profile"),
     picking: false,
     weekOffset: 0,
@@ -1411,9 +1415,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       else if (next) later.push({ p: p, s: s, at: next.s, txt: txt });
       else done.push({ p: p, s: s, at: last.e, txt: txt });
     });
-    working.sort(function (a, b) { return a.at - b.at; });
-    later.sort(function (a, b) { return a.at - b.at; });
-    done.sort(function (a, b) { return b.at - a.at; });
+    // Within each group, by start or end time, whichever is chosen; earliest first.
+    var byEnd = state.daySort === "end";
+    function timeKey(x) { return byEnd ? x.s.ranges[x.s.ranges.length - 1].e : x.s.ranges[0].s; }
+    function byTime(a, b) { return timeKey(a) - timeKey(b) || a.p.name.localeCompare(b.p.name, "sv"); }
+    working.sort(byTime); later.sort(byTime); done.sort(byTime);
     function group(title, list, empty) {
       return '<section class="day-sec"><div class="sec-head"><h2>' + title + ' <span class="cnt">' + list.length + "</span></h2></div>" +
         (list.length ? '<ul class="plist">' + list.map(function (x) {
@@ -1427,6 +1433,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       (depts ? modeSwitch("daymode", byDept) : "") + "</div>";
     if (closed) return out + '<p class="hint">' + esc(closed) + ", förskolan är stängd.</p></div>";
     if (!working.length && !later.length && !done.length) return out + '<p class="hint">Ingen jobbar idag.</p></div>';
+    out += '<div class="seg-ctl sort-ctl" role="group" aria-label="Sortera på"><span>Sortera på</span>' +
+      '<button data-act="daysort" data-s="start" aria-pressed="' + !byEnd + '">Starttid</button><button data-act="daysort" data-s="end" aria-pressed="' + byEnd + '">Sluttid</button></div>';
     if (byDept) return out + deptGroups(me, depts, [working, later, done, off]) + "</div>";
     out += group("Jobbar nu", working, "Ingen jobbar just nu.") + group("Har inte börjat", later, "Alla har börjat.") + group("Har slutat", done, "Ingen har slutat än.");
     if (off.length) out += '<section class="day-sec"><div class="sec-head"><h2>Lediga och frånvarande <span class="cnt">' + off.length + '</span></h2></div><p class="day-off">' +
@@ -2512,6 +2520,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (act === "subback") { state.sub = null; state.msg = null; render(); window.scrollTo(0, 0); return; }
     if (act === "gofavs") { state.view = "settings"; lsSet("skift.view", "settings"); render(); var fpn = document.getElementById("fav-panel"); if (fpn) fpn.scrollIntoView(); return; }
     if (act === "daymode") { state.dayMode = b.getAttribute("data-m"); lsSet("skift.daymode", state.dayMode === "dept" ? "dept" : null); render(); return; }
+    if (act === "daysort") { state.daySort = b.getAttribute("data-s"); lsSet("skift.daysort", state.daySort === "end" ? "end" : null); render(); return; }
     if (act === "peoplemode") { state.peopleMode = b.getAttribute("data-m"); lsSet("skift.peoplemode", state.peopleMode === "dept" ? "dept" : null); render(); return; }
     if (act === "go") { state.view = b.getAttribute("data-view"); state.picking = false; state.sub = null; if (state.view !== "settings") state.msg = null; lsSet("skift.view", state.view); render(); window.scrollTo(0, 0); }
     else if (act === "pick") { state.picking = true; if (state.view === "settings") state.view = "home"; render(); window.scrollTo(0, 0); }
