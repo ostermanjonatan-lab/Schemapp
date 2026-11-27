@@ -380,11 +380,22 @@ a.btn { text-decoration: none; color: var(--ink); }
 .day-nav .dn-arrow svg { width: 16px; height: 16px; stroke: var(--ink); }
 /* The date has the whole width between the arrows; the button back to today sits in the heading. */
 .head-tools { display: flex; align-items: center; gap: 6px; }
-.time-pick { display: flex; flex-direction: column; gap: 2px; }
-.tp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
-.tp-label { font-weight: 600; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
-.time-pick input[type=range] { width: 100%; margin: 0; height: 32px; accent-color: var(--accent); cursor: pointer; }
-.tp-scale { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.time-pick { display: flex; align-items: center; gap: 8px; }
+.time-btn { flex: 1; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; text-align: left; }
+.time-btn .tp-t { color: var(--muted); font-size: var(--fs-sm); }
+.time-btn .tp-v { flex: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
+.time-btn svg { width: 14px; height: 14px; stroke: var(--muted); }
+.wheels { display: flex; align-items: center; justify-content: center; gap: 4px; position: relative; padding: 0 6px; }
+.wheels::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; margin-top: -22px; border-radius: 10px; background: var(--accent-soft); pointer-events: none; }
+.wheel { position: relative; height: 220px; width: 72px; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; padding: 88px 0; overscroll-behavior: contain; -webkit-mask-image: linear-gradient(transparent, #000 40%, #000 60%, transparent); mask-image: linear-gradient(transparent, #000 40%, #000 60%, transparent); }
+.wheel::-webkit-scrollbar { display: none; }
+.wheel:focus-visible { outline: 2px solid var(--hl); border-radius: 8px; }
+.wv { height: 44px; display: grid; place-items: center; scroll-snap-align: center; font-size: 2rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); }
+.wv.on { color: var(--ink); font-weight: 700; }
+.wv:not(.on) { cursor: pointer; }
+.wsep { position: relative; font-size: 2rem; font-weight: 700; color: var(--ink); }
+.pop-btns { display: flex; gap: 8px; }
+.pop-btns .btn { flex: 1; }
 .tools { display: flex; gap: 8px; align-items: center; }
 .tools .search { flex: 1; min-width: 0; }
 .mini-seg { display: flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--accent-soft); flex: none; height: 48px; }
@@ -613,6 +624,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     daySort: lsGet("skift.daysort") === "end" ? "end" : "start",
     peopleOff: 0,
     peopleAt: null,
+    timePop: false,
     favQ: "",
     planQ: "",
     deptIdx: 0,
@@ -949,6 +961,22 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }
     return out + "</div>";
   }
+  // The time to show in Kollegor, chosen with two wheels (hours, minutes) in a popup, like a timer.
+  function wheel(id, vals, cur, label) {
+    return '<div class="wheel" id="' + id + '" role="listbox" aria-label="' + label + '" tabindex="0" data-cur="' + Math.max(0, vals.indexOf(cur)) + '">' +
+      vals.map(function (v) { return '<div class="wv' + (v === cur ? " on" : "") + '" data-act="wheelpick" data-v="' + v + '">' + pad(v) + "</div>"; }).join("") + "</div>";
+  }
+  function renderTimePop() {
+    var off = state.peopleOff, t = addDays(today(), off), hr = dayHours(t);
+    var at = state.peopleAt != null ? state.peopleAt : off === 0 ? nowMinutes() : hr.lo, val = Math.max(hr.lo, Math.min(hr.hi, at));
+    var hrs = [], mins = [];
+    for (var h = Math.floor(hr.lo / 60); h <= Math.ceil(hr.hi / 60); h++) hrs.push(h);
+    for (var m = 0; m < 60; m += 5) mins.push(m);
+    return '<div class="sheet-bg pop-bg" data-act="timeclose"></div><div class="plan-pop time-pop" role="dialog" aria-modal="true" aria-labelledby="time-title">' +
+      '<div class="sheet-head"><div style="min-width:0"><h3 id="time-title">Visa vilka som jobbar</h3><div class="sub">' + (off === 0 ? "Idag" : DAYS[dow(t)] + " " + shortDate(t)) + '</div></div><button class="icon-btn" data-act="timeclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
+      '<div class="wheels big">' + wheel("wh-h", hrs, Math.floor(val / 60), "Timme") + '<span class="wsep">:</span>' + wheel("wh-m", mins, Math.round(val % 60 / 5) * 5 % 60, "Minut") + "</div>" +
+      '<div class="pop-btns"><button class="btn" data-act="timeclear">' + (off === 0 ? "Nu" : "Hela dagen") + '</button><button class="btn primary" data-act="timeset">Visa tid</button></div></div>';
+  }
   function renderPlanPop() {
     var p = personByName(state.planOpen); if (!p) return "";
     var cur = PLAN_OF[keyOf(p)], g = planOf(p);
@@ -1069,6 +1097,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (state.person) { html += renderPersonSheet(me); state.person.fresh = false; }
     if (state.planOpen && state.view === "settings") html += renderPlanPop();
     if (state.deptPop) html += renderDeptPop();
+    if (state.timePop && state.view === "grid") html += renderTimePop();
     var focusId = document.activeElement && document.activeElement.id;
     var oldDeck = document.getElementById("deck"), deckTop = oldDeck ? oldDeck.scrollTop : 0;
     var oldSheet = app.querySelector(".sheet"), sheetTop = oldSheet ? oldSheet.scrollTop : 0, sheetKind = state.edit ? "edit" : state.person ? "person" : "";
@@ -1095,6 +1124,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (slideDir) { var sc = slideDir > 0 ? "from-r" : "from-l"; app.querySelectorAll(slideSel).forEach(function (el) { el.classList.add(sc); if (slideFar) el.classList.add("far"); }); slideDir = 0; }
     slideFar = false; slideSel = "[data-slide]";
     steadyOc();
+    placeWheels();
     if (document.getElementById("file-input")) loadXlsx(function () {});
     // Animate only when switching view, not on every redraw.
     var key = (needPick ? "pick" : state.view);
@@ -1524,11 +1554,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }).join("");
 
     if (listOnly) return list;
-    var hr = dayHours(t), val = at != null ? Math.max(hr.lo, Math.min(hr.hi, at)) : hr.lo;
-    var slider = closed ? "" : '<div class="time-pick"><div class="tp-row"><span class="tp-label" id="tp-label">' + (chosen ? "Kl. " + hhmm(at) : isToday ? "Nu, " + hhmm(at) : "Hela dagen") + "</span>" +
-      '<button class="text-btn" id="tp-reset" data-act="peopleat0"' + (chosen ? "" : " hidden") + ">" + (isToday ? "Nu" : "Hela dagen") + "</button></div>" +
-      '<input id="people-at" type="range" min="' + hr.lo + '" max="' + hr.hi + '" step="15" value="' + val + '" aria-label="Visa vilka som jobbar vid en viss tid" aria-valuetext="' + hhmm(val) + '">' +
-      '<div class="tp-scale" aria-hidden="true"><span>' + hhmm(hr.lo) + "</span><span>" + hhmm(hr.hi) + "</span></div></div>";
+    var slider = closed ? "" : '<div class="time-pick"><button class="time-btn" data-act="timeopen" aria-haspopup="dialog"><span class="tp-t">Tid</span><span class="tp-v">' +
+      (chosen ? "Kl. " + hhmm(at) : isToday ? "Nu, " + hhmm(at) : "Hela dagen") + "</span>" + ICON.down + "</button>" +
+      (chosen ? '<button class="text-btn" data-act="peopleat0">' + (isToday ? "Nu" : "Hela dagen") + "</button>" : "") + "</div>";
     return '<div class="view">' + exampleNote() +
       '<div class="sec-head"><h2>Kollegor</h2><div class="head-tools">' + (isToday ? "" : todayBtn("people0", true)) + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div></div>" +
       '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + "</button>" +
@@ -2459,7 +2487,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       return;
     }
     if (state.person ? !e.target.closest(".sheet") : state.view !== "home" && state.view !== "grid") return;
-    if (e.target.closest("input, select, nav")) return;
+    if (e.target.closest("input, select, nav, .wheel")) return;
     var sc = e.target.closest(".fav-scroll");
     if (sc && sc.scrollWidth > sc.clientWidth + 1) return;
     // Each part of Mitt schema swipes on its own: the open/close card by day, the week and the colleagues by week.
@@ -2507,7 +2535,21 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   }
   app.addEventListener("touchend", swipeEnd);
   // Which card of the cover screen is showing, for the dots.
+  // The time wheels: each row is one step; when a wheel stops between rows it settles on the nearest.
+  var WHEEL_ROW = 44, wheelQuiet = 0;
+  function placeWheels() {
+    wheelQuiet = Date.now() + 150;
+    app.querySelectorAll(".wheel").forEach(function (w) { w.scrollTop = +w.getAttribute("data-cur") * WHEEL_ROW; });
+  }
+  function wheelTurned(w) {
+    var k = Math.max(0, Math.min(w.children.length - 1, Math.round(w.scrollTop / WHEEL_ROW)));
+    if (k === +w.getAttribute("data-cur")) return;
+    w.setAttribute("data-cur", k);
+    Array.prototype.forEach.call(w.children, function (c, i) { c.classList.toggle("on", i === k); });
+    buzz();
+  }
   app.addEventListener("scroll", function (e) {
+    if (e.target.classList && e.target.classList.contains("wheel")) { if (Date.now() >= wheelQuiet) wheelTurned(e.target); return; }
     if (e.target.id !== "deck") return;
     var i = Math.round(e.target.scrollTop / Math.max(1, e.target.clientHeight));
     if (i === deckPage) return;
@@ -2584,6 +2626,19 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (act === "favweek") { slideWeek(+b.getAttribute("data-d"), "fav"); }
     else if (act === "fav0") { var f0 = ocDayFrom(0, 1); if (f0 != null && state.favOffset !== f0) { slideSel = "[data-favslide]"; slideDir = f0 < state.favOffset ? -1 : 1; state.favOffset = f0; render(); buzz(); } }
     else if (act === "peopleat0") { state.peopleAt = null; render(); }
+    else if (act === "timeopen") { state.timePop = true; render(); var wf = document.getElementById("wh-h"); if (wf) wf.focus({ preventScroll: true }); }
+    else if (act === "wheelpick") {
+      // Tapping a number above or below the middle turns the wheel to it.
+      var wl = b.parentNode, wi = Array.prototype.indexOf.call(wl.children, b);
+      wl.scrollTo({ top: wi * WHEEL_ROW, behavior: reduceMotion ? "auto" : "smooth" });
+    }
+    else if (act === "timeclose") { state.timePop = false; render(); }
+    else if (act === "timeclear") { state.timePop = false; state.peopleAt = null; render(); }
+    else if (act === "timeset") {
+      var wh = app.querySelector("#wh-h"), wm = app.querySelector("#wh-m");
+      state.peopleAt = +wh.children[+wh.getAttribute("data-cur")].getAttribute("data-v") * 60 + +wm.children[+wm.getAttribute("data-cur")].getAttribute("data-v");
+      state.timePop = false; buzz(); render();
+    }
     else if (act === "peopleday") { slideWeek(+b.getAttribute("data-d"), "people"); }
     else if (act === "people0") { if (state.peopleOff) { slideSel = "[data-pslide]"; slideDir = state.peopleOff > 0 ? -1 : 1; state.peopleOff = 0; render(); buzz(); } }
     else if (act === "oc0") { var o0 = ocDayFrom(0, 1); if (o0 != null && state.ocOffset !== o0) { slideSel = "[data-ocslide]"; slideDir = o0 < state.ocOffset ? -1 : 1; state.ocOffset = o0; render(); buzz(); } }
@@ -2628,24 +2683,13 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
   app.addEventListener("input", function (e) {
     if (e.target.id === "pick-q") { state.pickQ = e.target.value; filterPicker(state.pickQ); return; }
-    // Dragging the time: only the list and the label change, so the slider keeps the finger.
-    if (e.target.id === "people-at") {
-      state.peopleAt = +e.target.value;
-      e.target.setAttribute("aria-valuetext", hhmm(state.peopleAt));
-      var pl = document.getElementById("people-list"), lb = document.getElementById("tp-label");
-      if (pl) pl.innerHTML = renderPeople(personByName(state.profile), true);
-      if (lb) lb.textContent = "Kl. " + hhmm(state.peopleAt);
-      var rs = document.getElementById("tp-reset"); if (rs) rs.hidden = false;
-      if (state.peopleQ) filterList(state.peopleQ, "#people-list", "people-none");
-      if (state.peopleAt % 60 === 0) buzz();
-      return;
-    }
     if (e.target.id === "fav-q") { state.favQ = e.target.value; filterList(state.favQ, "#fav-list", "fav-none"); return; }
     if (e.target.id === "plan-q") { state.planQ = e.target.value; filterList(state.planQ, "#plan-list", "plan-none"); return; }
     if (e.target.id === "people-q") { var hadQ = !!state.peopleQ.trim(); state.peopleQ = e.target.value; if (hadQ !== !!state.peopleQ.trim()) render(); else filterList(state.peopleQ, "#people-list", "people-none"); return; }
   });
   app.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && (state.planOpen || state.deptPop)) { state.planOpen = null; state.deptPop = null; render(); return; }
+    if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.target.classList && e.target.classList.contains("wheel")) { e.preventDefault(); e.target.scrollTop += (e.key === "ArrowDown" ? 1 : -1) * WHEEL_ROW; return; }
+    if (e.key === "Escape" && (state.planOpen || state.deptPop || state.timePop)) { state.planOpen = null; state.deptPop = null; state.timePop = false; render(); return; }
     if (e.key === "Escape" && (state.edit || state.person)) { closeSheet(); return; }
     if (e.key === "Enter" && e.target.id === "pick-q") {
       var vis = Array.prototype.filter.call(app.querySelectorAll(".plist li"), function (li) { return !li.hidden; });
@@ -2665,7 +2709,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
 
   // Keep "pågår / börjar om" current.
-  setInterval(function () { if (state.view !== "settings" && !state.picking && !state.edit && document.activeElement.id !== "people-at") render(); }, 60000);
+  setInterval(function () { if (state.view !== "settings" && !state.picking && !state.edit && !document.activeElement.classList.contains("wheel")) render(); }, 60000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden && state.view !== "settings" && !state.edit) render(); });
   // Re-check on resize (folding/unfolding); return to the card each time the cover screen comes back.
   var resizeT;
