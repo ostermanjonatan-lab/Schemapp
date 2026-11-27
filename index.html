@@ -373,7 +373,8 @@ a.btn { text-decoration: none; color: var(--ink); }
 /* Kollegor: search and sort on one row; slim rows with name and time only, your own row marked. */
 .day-nav { display: flex; align-items: center; gap: 6px; margin-top: calc(var(--space-inner) - var(--space-section)); }
 /* The date slides with a swipe and fades out before it reaches the arrows. */
-.day-nav .dn-mid { flex: 1; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 20px), transparent); }
+.day-nav .dn-mid { flex: 1; min-width: 0; overflow: hidden; }
+.day-nav .dn-mid.moving { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 .day-nav .dn-label { display: block; text-align: center; white-space: nowrap; font-weight: 600; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
 .day-nav .dn-arrow { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; background: var(--accent-soft); cursor: pointer; }
 .day-nav .dn-arrow svg { width: 16px; height: 16px; stroke: var(--ink); }
@@ -2416,6 +2417,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       el.classList.remove("from-l", "from-r", "far");
       el.style.transition = ease || "none";
       el.style.transform = x ? "translateX(" + x + "px)" : "";
+      // The date in Kollegor has little room between the arrows: it fades out over a short distance.
+      if (el.classList.contains("dn-label")) {
+        el.parentNode.classList.toggle("moving", !!x);
+        if (fade != null && x) fade = Math.min(fade, Math.max(0, 1 - Math.abs(x) / 80));
+      }
       el.style.opacity = fade == null ? "" : String(fade);
     });
   }
