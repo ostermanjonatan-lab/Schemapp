@@ -396,6 +396,21 @@ a.btn { text-decoration: none; color: var(--ink); }
 .wv:not(.on) { cursor: pointer; }
 .wsep { position: relative; font-size: 2rem; font-weight: 700; color: var(--ink); }
 .pop-btns { display: flex; gap: 8px; }
+.wrange { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.wpair { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wp-l { font-size: var(--fs-sm); color: var(--muted); }
+.wdash { font-size: 1.5rem; font-weight: 600; color: var(--muted); padding-top: 24px; }
+.wheels.small { padding: 0 2px; gap: 0; }
+.wheels.small .wheel { width: 50px; }
+.wheels.small .wv, .wheels.small .wsep { font-size: 1.5rem; }
+.sub-time { flex: none; min-height: 44px; padding: 0 10px 0 12px; }
+.sub-time .tp-v { white-space: nowrap; }
+.rp-past { display: flex; flex-direction: column; gap: 6px; }
+.mini-seg.p-away { margin: 4px 0 2px; height: auto; display: grid; grid-template-columns: repeat(3, 1fr); }
+.p-away button { height: 38px; padding: 0 8px; white-space: nowrap; }
+.p-big.away { color: var(--warn); }
+.other-in { font: inherit; font-size: 1rem; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); width: 100%; }
+.other-hints { gap: 6px; }
 /* Daily report */
 .sheet.report { max-height: 92%; }
 .rp-sec { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
@@ -405,14 +420,16 @@ a.btn { text-decoration: none; color: var(--ink); }
 .rp-list li span { font-size: var(--fs-md); }
 .rp-list li strong { font-weight: 600; }
 .rp-list .icon-btn { width: 32px; height: 32px; background: none; }
-.rp-form { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
+.rp-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .rp-form input, .abs-pop .search { font: inherit; font-size: 1rem; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; }
 .rp-sec > .btn { align-self: flex-start; }
 .rp-scope { align-self: flex-start; height: 40px; }
+.rp-note { width: 100%; font: inherit; font-size: 1rem; line-height: 1.4; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
 .rp-text { width: 100%; font: inherit; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
 .abs-pop { max-height: 80vh; }
 .abs-why { height: 40px; }
-.abs-why button { flex: 1; }
+.mini-seg.abs-why { height: auto; display: grid; grid-template-columns: repeat(3, 1fr); }
+.abs-why button { height: 36px; padding: 0 8px; white-space: nowrap; }
 .abs-list { overflow-y: auto; min-height: 0; flex: 1; }
 .abs-list small { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 400; }
 .pop-btns .btn { flex: 1; }
@@ -436,7 +453,7 @@ a.btn { text-decoration: none; color: var(--ink); }
 .prow .pt.work { color: var(--ink); }
 .prow .pt.note { color: var(--warn); }
 .p-today { display: flex; flex-direction: column; gap: 4px; }
-.p-big { font-size: var(--fs-xl); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.p-big { font-size: var(--fs-xl); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plan-row { display: flex; flex-direction: column; gap: 6px; }
 .plan-row > span { font-size: var(--fs-sm); color: var(--muted); }
 .role-list { list-style: none; margin: 6px 0 0; padding: 0; border-bottom: 1px solid var(--line); }
@@ -653,6 +670,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     absPop: false,
     absWhy: "sjuk",
     absQ: "",
+    absOther: "",
+    reportNote: null,
+    subTimePop: false,
+    otherPop: null,
     favQ: "",
     planQ: "",
     deptIdx: 0,
@@ -861,7 +882,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       }, function () {});
       db.collection("days").onSnapshot(function (snap) {
         var m = {};
-        snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.date) m[x.date] = { absent: x.absent || {}, subs: Array.isArray(x.subs) ? x.subs : [] }; });
+        snap.docs.forEach(function (doc) { var x = doc.data(); if (x && x.date) m[x.date] = { absent: x.absent || {}, subs: Array.isArray(x.subs) ? x.subs : [], note: typeof x.note === "string" ? x.note : "" }; });
         DAY_EDIT = m;
         render();
       }, function () {});
@@ -957,17 +978,26 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   var ABSENCE = [["sjuk", "Sjuk"], ["vab", "VAB"], ["ledig", "Ledig"], ["semester", "Semester"]];
   var DAY_EDIT = {};
   try { DAY_EDIT = JSON.parse(lsGet("skift.days") || "{}") || {}; } catch (e) { DAY_EDIT = {}; }
-  function dayEdit(d) { var k = ymd(d); return DAY_EDIT[k] || { absent: {}, subs: [] }; }
-  function writeDay(d, rec) {
+  // Anything else that keeps someone away from the group: training, a course, a meeting. Free text.
+  var OTHER_HINTS = ["Utbildning", "Kurs", "Möte", "Planering", "Tjänstledig"];
+  function isAbsenceCode(w) { return ABSENCE.some(function (a) { return a[0] === w; }); }
+  function otherField(id, val) {
+    return '<input id="' + id + '" class="other-in" type="text" maxlength="40" placeholder="Till exempel utbildning" value="' + esc(val) + '" autocomplete="off" aria-label="Annan orsak">' +
+      '<div class="chips other-hints">' + OTHER_HINTS.map(function (h) { return '<button type="button" class="chip" data-act="otherhint" data-for="' + id + '" data-v="' + h + '">' + h + "</button>"; }).join("") + "</div>";
+  }
+  function absenceName(w) { var a = ABSENCE.filter(function (x) { return x[0] === w; })[0]; return a ? a[1] : w; }
+  function dayEdit(d) { var r = DAY_EDIT[ymd(d)] || {}; return { absent: r.absent || {}, subs: r.subs || [], note: r.note || "" }; }
+  function writeDay(d, rec, quiet) {
     var k = ymd(d);
-    DAY_EDIT[k] = rec; buzz(); render();
+    DAY_EDIT[k] = rec;
+    if (!quiet) { buzz(); render(); }
     if (!dbRef) {
       // Only the last two weeks are kept on the phone.
       var old = ymd(addDays(today(), -14));
       Object.keys(DAY_EDIT).forEach(function (x) { if (x < old) delete DAY_EDIT[x]; });
       lsSet("skift.days", JSON.stringify(DAY_EDIT)); return;
     }
-    dbRef.collection("days").doc("d" + k).set({ date: k, absent: rec.absent, subs: rec.subs }).then(null, function () {
+    dbRef.collection("days").doc("d" + k).set({ date: k, absent: rec.absent, subs: rec.subs, note: rec.note || "" }).then(null, function () {
       state.reportErr = "Ändringen kunde inte sparas. Försök igen."; render();
     });
   }
@@ -1033,7 +1063,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     try { var x = JSON.parse(lsGet("skift.report") || "null"); if (x) Object.keys(o).forEach(function (k) { if (x[k] != null) o[k] = x[k]; }); } catch (e) {}
     return o;
   }
-  function reportText(me, d) {
+  function reportText(me, d, note) {
     var o = reportOpts(), rec = dayEdit(d), dl = deptList(), mine = me ? deptOf(me) : null;
     var inScope = function (dept) { return o.scope !== "mine" || mine == null || dept === mine; };
     var rows = [];
@@ -1053,7 +1083,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (timed.length) {
         var lo = Math.min.apply(null, timed.map(function (r) { return r.s; })), hi = Math.max.apply(null, timed.map(function (r) { return r.e; }));
         var names = function (f) { return timed.filter(f).map(function (r) { return r.name; }).join(", "); };
-        out.push("", "Öppnar " + hhmm(lo) + ": " + names(function (r) { return r.s === lo; }), "Stänger " + hhmm(hi) + ": " + names(function (r) { return r.e === hi; }));
+        out.push("", "Öppnar: " + names(function (r) { return r.s === lo; }), "Stänger: " + names(function (r) { return r.e === hi; }));
       }
     }
     var shown = rows.filter(function (r) { return r.sub ? o.subs : o.regular; }).sort(function (a, b) { return a.s - b.s || a.name.localeCompare(b.name, "sv"); });
@@ -1061,19 +1091,37 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     if (o.depts && dl) {
       deptOrder(me, dl).concat([null]).forEach(function (i) {
         var xs = shown.filter(function (r) { return r.dept === i; });
-        if (xs.length) out.push("", (i == null ? "Utan avdelning" : dl[i].name) + " (" + xs.length + ")", xs.map(line).join("\n"));
+        if (xs.length) out.push("", (i == null ? "Utan avdelning" : dl[i].name), xs.map(line).join("\n"));
       });
-    } else if (shown.length) out.push("", "På jobbet (" + shown.length + ")", shown.map(line).join("\n"));
+    } else if (shown.length) out.push("", "På jobbet", shown.map(line).join("\n"));
     if (o.absent) {
       var ab = Object.keys(rec.absent).map(function (k) {
         var p = DATA.people.filter(function (x) { return keyOf(x) === k; })[0];
         if (!p || !inScope(deptOf(p))) return null;
         var why = ABSENCE.filter(function (a) { return a[0] === rec.absent[k]; })[0];
-        return p.name + ", " + (why ? why[1].toLowerCase().replace("vab", "VAB") : rec.absent[k]);
+        var w = why ? why[1] : rec.absent[k];
+        return p.name + ", " + (w === "VAB" ? w : w.charAt(0).toLowerCase() + w.slice(1));
       }).filter(Boolean).sort(function (a, b) { return a.localeCompare(b, "sv"); });
       if (ab.length) out.push("", "Frånvarande", ab.join("\n"));
     }
+    // Your own text goes last, as written.
+    note = (note != null ? note : rec.note || "").trim();
+    if (note) out.push("", note);
     return out.join("\n");
+  }
+  // Substitutes used before, newest first: from earlier daily reports and this phone's own list.
+  function pastSubs(exclude) {
+    var seen = {}, out = [];
+    function add(x) { var k = norm(x.name || ""); if (!k || seen[k] || exclude.indexOf(k) >= 0) return; seen[k] = 1; out.push(x); }
+    Object.keys(DAY_EDIT).sort().reverse().forEach(function (d) { (DAY_EDIT[d].subs || []).forEach(add); });
+    try { (JSON.parse(lsGet("skift.subnames") || "[]") || []).forEach(add); } catch (e) {}
+    return out.slice(0, 10);
+  }
+  function rememberSub(x) {
+    var list = [];
+    try { list = JSON.parse(lsGet("skift.subnames") || "[]") || []; } catch (e) {}
+    list = [x].concat(list.filter(function (y) { return norm(y.name) !== norm(x.name); })).slice(0, 20);
+    lsSet("skift.subnames", JSON.stringify(list));
   }
   function renderReport(me) {
     var d = addDays(today(), state.peopleOff), rec = dayEdit(d), o = reportOpts(), dl = deptList(), f = state.reportForm;
@@ -1087,16 +1135,23 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       return '<li><span><strong>' + esc(x.name) + "</strong> " + esc(x.time || "") + (dl && x.dept != null && dl[x.dept] ? " · " + esc(dl[x.dept].name) : "") + '</span><button class="icon-btn" data-act="subdel" data-i="' + i + '" aria-label="Ta bort ' + esc(x.name) + '">' + ICON.close + "</button></li>";
     }).join("");
     var fd = f.dept != null ? f.dept : mine;
-    var text = reportText(me, d), canShare = !!navigator.share;
+    var text = reportText(me, d, state.reportNote), canShare = !!navigator.share;
     return '<div class="sheet-bg' + (state.reportFresh ? " in" : "") + '" data-act="reportclose"></div><div class="sheet report' + (state.reportFresh ? " in" : "") + '" role="dialog" aria-modal="true" aria-labelledby="report-title"><div class="wrap sheet-in">' +
       '<div class="sheet-head"><div style="min-width:0"><h3 id="report-title">Dagsrapport</h3><div class="sub">' + DAYS[dow(d)] + " " + shortDate(d) + '</div></div><button class="icon-btn" data-act="reportclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
       (state.reportErr ? '<div class="msg err" role="alert">' + esc(state.reportErr) + "</div>" : "") +
       '<section class="rp-sec"><h4>Frånvaro</h4>' + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn" data-act="absadd">Lägg till frånvaro</button></section>' +
       '<section class="rp-sec"><h4>Vikarier idag</h4>' + (subs ? '<ul class="rp-list">' + subs + "</ul>" : "") +
         '<div class="rp-form"><input id="sub-name" type="text" placeholder="Namn" autocomplete="off" value="' + esc(f.name || "") + '" aria-label="Vikariens namn">' +
-        '<input id="sub-time" type="text" inputmode="numeric" placeholder="08:00-16:00" autocomplete="off" value="' + esc(f.time || "") + '" aria-label="Tid, till exempel 08:00-16:00"></div>' +
+        '<button class="time-btn sub-time" data-act="subtimeopen" aria-haspopup="dialog"><span class="tp-v">' + (f.s != null ? hhmm(f.s) + "–" + hhmm(f.e) : "Välj tid") + "</span>" + ICON.down + "</button></div>" +
+        (function () {
+          var past = pastSubs(rec.subs.map(function (x) { return norm(x.name); }));
+          return past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><div class="chips">' + past.map(function (x) {
+            return '<button class="chip" data-act="subpast" data-n="' + esc(x.name) + '" data-t="' + esc(x.time || "") + '" data-d="' + (x.dept == null ? "" : x.dept) + '">' + esc(x.name) + "</button>";
+          }).join("") + "</div></div>" : "";
+        })() +
         (dl ? '<div class="chips rp-depts" role="group" aria-label="Avdelning">' + dl.map(function (x, i) { return '<button class="chip" data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "") +
         '<button class="btn" data-act="subadd">Lägg till vikarie</button></section>' +
+      '<section class="rp-sec"><h4>Övrigt</h4><textarea id="report-note" class="rp-note" rows="3" maxlength="1000" placeholder="Till exempel utflykt, besök eller annat som kollegorna behöver veta">' + esc(state.reportNote != null ? state.reportNote : rec.note) + "</textarea></section>" +
       '<section class="rp-sec"><h4>Visa i texten</h4><ul class="check-list">' + REPORT_OPTS.map(function (x) {
         if (x[0] === "depts" && !dl) return "";
         return '<li><button data-act="ropt" data-k="' + x[0] + '" aria-pressed="' + !!o[x[0]] + '"><span>' + x[1] + "</span>" + ICON.check + "</button></li>";
@@ -1115,13 +1170,37 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     });
     return '<div class="sheet-bg pop-bg" data-act="absclose"></div><div class="plan-pop abs-pop" role="dialog" aria-modal="true" aria-labelledby="abs-title">' +
       '<div class="sheet-head"><div style="min-width:0"><h3 id="abs-title">Lägg till frånvaro</h3><div class="sub">Välj orsak och sedan namn</div></div><button class="icon-btn" data-act="absclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
-      '<div class="mini-seg abs-why" role="group" aria-label="Orsak">' + ABSENCE.map(function (a) { return '<button data-act="abswhy" data-w="' + a[0] + '" aria-pressed="' + (why === a[0]) + '">' + a[1] + "</button>"; }).join("") + "</div>" +
+      '<div class="mini-seg abs-why" role="group" aria-label="Orsak">' + ABSENCE.map(function (a) { return '<button data-act="abswhy" data-w="' + a[0] + '" aria-pressed="' + (why === a[0]) + '">' + a[1] + "</button>"; }).join("") +
+        '<button data-act="abswhy" data-w="annat" aria-pressed="' + (why === "annat") + '">Annat</button></div>' +
+      (why === "annat" ? otherField("abs-other", state.absOther || "") : "") +
       '<input id="abs-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.absQ || "") + '" autocomplete="off" aria-label="Sök namn">' +
       '<ul class="check-list abs-list" id="abs-list">' + people.map(function (p) {
         var s = shiftOn(p, d);
         return '<li data-q="' + esc(norm(p.name)) + '"><button data-act="absset" data-k="' + esc(keyOf(p)) + '"><span>' + esc(p.name) + '</span><small>' + (s.kind === "work" ? rangeText(s) : "Ledig") + "</small></button></li>";
       }).join("") + '</ul><p class="hint" id="abs-none" hidden>Inget namn matchar.</p></div>';
   }
+  function renderOtherPop() {
+    var p = personByName(state.otherPop); if (!p) return "";
+    var t = addDays(today(), state.view === "grid" ? state.peopleOff : 0), cur = dayEdit(t).absent[keyOf(p)];
+    return '<div class="sheet-bg pop-bg" data-act="otherclose"></div><div class="plan-pop" role="dialog" aria-modal="true" aria-labelledby="other-title">' +
+      '<div class="sheet-head"><div style="min-width:0"><h3 id="other-title">' + esc(p.name) + '</h3><div class="sub">Annan orsak, ' + DAYS[dow(t)].toLowerCase() + " " + shortDate(t) + '</div></div><button class="icon-btn" data-act="otherclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
+      '<form class="dept-form" data-form="other">' + otherField("other-text", cur && !isAbsenceCode(cur) ? cur : "") + '<button class="btn primary" type="submit">Spara</button></form></div>';
+  }
+  // A substitute's hours: two pairs of wheels, from and to, the same as choosing a time in Kollegor.
+  function renderSubTimePop() {
+    var f = state.reportForm, hr = dayHours(addDays(today(), state.peopleOff)), hrs = [], mins = [];
+    for (var h = Math.floor(hr.lo / 60); h <= Math.ceil(hr.hi / 60); h++) hrs.push(h);
+    for (var m = 0; m < 60; m += 5) mins.push(m);
+    var s = f.s != null ? f.s : 8 * 60, e = f.e != null ? f.e : 16 * 60;
+    var pair = function (k, label, v) {
+      return '<div class="wpair"><span class="wp-l">' + label + '</span><div class="wheels small">' + wheel("wh-" + k + "h", hrs, Math.floor(v / 60), label + ", timme") + '<span class="wsep">:</span>' + wheel("wh-" + k + "m", mins, Math.round(v % 60 / 5) * 5 % 60, label + ", minut") + "</div></div>";
+    };
+    return '<div class="sheet-bg pop-bg" data-act="subtimeclose"></div><div class="plan-pop time-pop" role="dialog" aria-modal="true" aria-labelledby="subtime-title">' +
+      '<div class="sheet-head"><div style="min-width:0"><h3 id="subtime-title">Vikariens tid</h3></div><button class="icon-btn" data-act="subtimeclose" aria-label="Stäng">' + ICON.close + "</button></div>" +
+      '<div class="wrange">' + pair("s", "Från", s) + '<span class="wdash">–</span>' + pair("e", "Till", e) + "</div>" +
+      '<div class="pop-btns"><button class="btn" data-act="subtimeclear">Ingen tid</button><button class="btn primary" data-act="subtimeset">Spara tid</button></div></div>';
+  }
+  function wheelValue(id) { var w = app.querySelector("#" + id); return +w.children[+w.getAttribute("data-cur")].getAttribute("data-v"); }
   function renderTimePop() {
     var off = state.peopleOff, t = addDays(today(), off), hr = dayHours(t);
     var at = state.peopleAt != null ? state.peopleAt : off === 0 ? nowMinutes() : hr.lo, val = Math.max(hr.lo, Math.min(hr.hi, at));
@@ -1231,6 +1310,40 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   };
 
   var lastViewKey = null, slideDir = 0, slideFar = false, slideSel = "[data-slide]", lastSheetKind = "";
+  // Redraw by changing only what differs from what is on screen, instead of replacing everything.
+  // Replacing the whole page made open sheets and buttons flicker on every tap.
+  function morph(root, html) {
+    var tpl = document.createElement("template");
+    tpl.innerHTML = html;
+    patchChildren(root, tpl.content);
+  }
+  function patchChildren(cur, next) {
+    var a = cur.firstChild, b = next.firstChild;
+    while (b) {
+      var nb = b.nextSibling;
+      if (!a) { cur.appendChild(b); }
+      else if (a.nodeType === b.nodeType && a.nodeName === b.nodeName && (a.nodeType !== 1 || a.id === b.id)) { patchNode(a, b); a = a.nextSibling; }
+      else { var na = a.nextSibling; cur.replaceChild(b, a); a = na; }
+      b = nb;
+    }
+    while (a) { var rm = a; a = a.nextSibling; cur.removeChild(rm); }
+  }
+  function patchNode(a, b) {
+    if (a.nodeType === 3 || a.nodeType === 8) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+    if (a.nodeType !== 1) return;
+    var i, at;
+    for (i = a.attributes.length - 1; i >= 0; i--) { at = a.attributes[i].name; if (!b.hasAttribute(at)) a.removeAttribute(at); }
+    for (i = 0; i < b.attributes.length; i++) { at = b.attributes[i]; if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value); }
+    var tag = a.nodeName;
+    if (tag === "INPUT" || tag === "TEXTAREA") {
+      // A field being typed in keeps what is typed; others show what the page says.
+      var v = tag === "TEXTAREA" ? b.textContent : (b.getAttribute("value") || "");
+      if (a !== document.activeElement && a.value !== v) a.value = v;
+      if (tag === "TEXTAREA") { if (a.textContent !== b.textContent) a.textContent = b.textContent; if (a !== document.activeElement) a.value = v; }
+      return;
+    }
+    patchChildren(a, b);
+  }
   function render() {
     applyNames();
     var me = state.profile && personByName(state.profile);
@@ -1253,13 +1366,15 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     else if (state.person) { html += renderPersonSheet(me); state.person.fresh = false; }
     if (state.planOpen && state.view === "settings") html += renderPlanPop();
     if (state.deptPop) html += renderDeptPop();
+    if (state.otherPop && state.person) html += renderOtherPop();
     if (state.timePop && state.view === "grid") html += renderTimePop();
+    if (state.subTimePop && state.report) html += renderSubTimePop();
     if (state.report && state.view === "grid") { html += renderReport(me); state.reportFresh = false; }
     if (state.absPop && state.report && state.view === "grid") html += renderAbsPop();
     var focusId = document.activeElement && document.activeElement.id;
     var oldDeck = document.getElementById("deck"), deckTop = oldDeck ? oldDeck.scrollTop : 0;
     var oldSheet = app.querySelector(".sheet"), sheetTop = oldSheet ? oldSheet.scrollTop : 0, sheetKind = state.edit ? "edit" : state.person ? "person" : "";
-    app.innerHTML = html;
+    morph(app, html);
     var newDeck = document.getElementById("deck");
     if (newDeck && oldDeck) newDeck.scrollTop = deckTop;
     // Keep the sheet where it was scrolled when the page redraws behind it.
@@ -1677,8 +1792,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     var off = state.peopleOff, isToday = off === 0, t = addDays(today(), off), depts = deptList(), byDept = depts && state.peopleMode === "dept";
     var at = state.peopleAt != null ? state.peopleAt : isToday ? nowMinutes() : null, chosen = state.peopleAt != null, now = at;
     var sort = state.daySort === "end" ? "end" : "start", q = norm(state.peopleQ || "").trim(), closed = closedDay(t);
+    var absent = dayEdit(t).absent;
     var all = DATA.people.map(function (p) {
-      var s = shiftOn(p, t), st = 3, txt;
+      var s = shiftOn(p, t), st = 3, txt, away = absent[keyOf(p)];
+      if (away) return { p: p, s: { kind: "note", label: absenceName(away), ranges: [] }, st: 3, txt: esc(absenceName(away)) };
       if (s.kind === "work" && at == null) { st = 0; txt = rangeText(s); }
       else if (s.kind === "work") {
         var cur = s.ranges.some(function (r) { return now >= r.s && now < r.e; }), next = s.ranges.some(function (r) { return now < r.s; });
@@ -1734,22 +1851,29 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // One colleague: today's shift and their week, with arrows to change week.
   function renderPersonSheet(me) {
     var ps = state.person, p = personByName(ps.name); if (!p) return "";
-    var isMe = me && me.name === p.name, t = today(), sh = shiftOn(p, t), st = statusFor(p, t);
-    var anim = ps.fresh ? " in" : "";
-    var big = sh.kind === "work" ? rangeText(sh) : sh.kind === "note" ? esc(sh.label) : sh.closed ? esc(sh.closed) : "Ledig";
+    // Opened from Kollegor on another day: that day is shown, and the absence is set for it.
+    var off = state.view === "grid" ? state.peopleOff : 0, t = addDays(today(), off);
+    var isMe = me && me.name === p.name, sh = shiftOn(p, t), st = off === 0 ? statusFor(p, t) : null;
+    var anim = ps.fresh ? " in" : "", away = dayEdit(t).absent[keyOf(p)], awayName = away ? absenceName(away) : "";
+    var big = away ? esc(awayName) : sh.kind === "work" ? rangeText(sh) : sh.kind === "note" ? esc(sh.label) : sh.closed ? esc(sh.closed) : "Ledig";
     var line = "";
+    if (away) { st = null; if (sh.kind === "work") line += '<span class="hint">Schema ' + rangeText(sh) + "</span>"; }
     if (st) line += '<span class="pill ' + st.cls + '">' + st.text + "</span>";
-    if (sh.kind === "work") line += '<span class="hint">' + hours(workMinutes(sh)) + "</span>";
+    if (!away && sh.kind === "work") line += '<span class="hint">' + hours(workMinutes(sh)) + "</span>";
     if (sh.changed) line += '<span class="pill changed">Ändrat</span>';
-    if (sh.kind !== "work" || (st && st.cls === "done")) {
+    if (off === 0 && (away || sh.kind !== "work" || (st && st.cls === "done"))) {
       var nx = nextShift(p, t);
       if (nx) line += '<span class="hint">Nästa pass ' + (nx.i === 1 ? "imorgon" : DAYS[dow(nx.d)].toLowerCase() + " " + shortDate(nx.d)) + " " + rangeText(nx.sh) + "</span>";
     }
     var ex = extraOn(p, t);
     return '<div class="sheet-bg' + anim + '" data-act="closesheet"></div><div class="sheet' + anim + '" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="sheet-grab" aria-hidden="true"><span></span></div><div class="wrap sheet-in">' +
       '<div class="sheet-head"><div style="min-width:0"><h3 id="sheet-title">' + esc(p.name) + (isMe ? " (du)" : "") + '<button class="pen-btn" data-act="pname" aria-label="Byt namn på ' + esc(p.name) + '">' + ICON.pen + '</button></h3><div class="sub">' + empText(p) + '</div></div><button class="icon-btn" data-act="closesheet" aria-label="Stäng">' + ICON.close + "</button></div>" +
-      '<section class="p-today" aria-label="Idag"><div class="group-label">Idag, ' + DAYS[dow(t)].toLowerCase() + " " + shortDate(t) + '</div><div class="p-big">' + big + "</div>" +
-      (line ? '<div class="row">' + line + "</div>" : "") + (ex ? '<div class="extra-line">' + esc(ex) + "</div>" : "") + "</section>" +
+      '<section class="p-today" aria-label="' + (off === 0 ? "Idag" : DAYS[dow(t)]) + '"><div class="group-label">' + (off === 0 ? "Idag, " + DAYS[dow(t)].toLowerCase() : off === 1 ? "Imorgon, " + DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + '</div><div class="p-big' + (away ? " away" : "") + '">' + big + "</div>" +
+      // The buttons sit right under the one-line status, so they stay put when the lines below change.
+      '<div class="mini-seg p-away" role="group" aria-label="Frånvaro"><button data-act="pabsent" data-w="" aria-pressed="' + !away + '">På plats</button>' +
+      ABSENCE.map(function (a) { return '<button data-act="pabsent" data-w="' + a[0] + '" aria-pressed="' + (away === a[0]) + '">' + a[1] + "</button>"; }).join("") +
+      '<button data-act="potherpop" aria-pressed="' + !!(away && !isAbsenceCode(away)) + '">Annat</button></div>' +
+      (line ? '<div class="row">' + line + "</div>" : "") + (ex && !away ? '<div class="extra-line">' + esc(ex) + "</div>" : "") + "</section>" +
       weekBlock(p, ps.week, "pweek", true) +
       "</div></div>";
   }
@@ -2757,7 +2881,23 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   // Remember whether "Schemafil och regler" is open.
 
   // ---------- Events ----------
+  // The note is saved when you leave the field, so typing is not interrupted.
+  app.addEventListener("change", function (e) {
+    if (e.target.id !== "report-note") return;
+    var nd = addDays(today(), state.peopleOff), cur = dayEdit(nd), v = e.target.value.slice(0, 1000);
+    if (v === cur.note) return;
+    writeDay(nd, { absent: cur.absent, subs: cur.subs, note: v }, true);
+  });
   app.addEventListener("submit", function (e) {
+    if (e.target.matches && e.target.matches("[data-form=other]")) {
+      e.preventDefault();
+      var ov = document.getElementById("other-text").value.trim().slice(0, 40), op = personByName(state.otherPop);
+      state.otherPop = null;
+      if (!op || !ov) { render(); return; }
+      var od = addDays(today(), state.view === "grid" ? state.peopleOff : 0), orec = dayEdit(od), onr = { absent: Object.assign({}, orec.absent), subs: orec.subs.slice(), note: orec.note };
+      onr.absent[keyOf(op)] = ov; writeDay(od, onr);
+      return;
+    }
     if (!e.target.matches || !e.target.matches("[data-form=deptname]")) return;
     e.preventDefault();
     var v = document.getElementById("dept-name").value.trim(), i = state.deptPop && state.deptPop.i;
@@ -2798,25 +2938,56 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       var wl = b.parentNode, wi = Array.prototype.indexOf.call(wl.children, b);
       wl.scrollTo({ top: wi * WHEEL_ROW, behavior: reduceMotion ? "auto" : "smooth" });
     }
-    else if (act === "reportopen") { state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); }
+    else if (act === "reportopen") { state.reportNote = null; state.report = true; state.reportFresh = true; state.reportErr = null; state.reportCopied = false; render(); }
     else if (act === "reportclose") { state.report = false; state.absPop = false; render(); }
     else if (act === "absadd") { state.absPop = true; state.absQ = ""; render(); }
     else if (act === "absclose") { state.absPop = false; render(); }
     else if (act === "abswhy") { state.absWhy = b.getAttribute("data-w"); render(); }
+    else if (act === "potherpop" && state.person) { state.otherPop = state.person.name; render(); var oi = document.getElementById("other-text"); if (oi) oi.focus(); }
+    else if (act === "otherclose") { state.otherPop = null; render(); }
+    else if (act === "otherhint") {
+      var oin = document.getElementById(b.getAttribute("data-for"));
+      if (oin) { oin.value = b.getAttribute("data-v"); if (oin.id === "abs-other") state.absOther = oin.value; oin.focus(); }
+    }
+    else if (act === "pabsent" && state.person) {
+      var pp = personByName(state.person.name), pd = addDays(today(), state.view === "grid" ? state.peopleOff : 0), pr = dayEdit(pd), pn = { absent: Object.assign({}, pr.absent), subs: pr.subs.slice(), note: pr.note }, pw = b.getAttribute("data-w");
+      if (!pp) return;
+      if (pw) pn.absent[keyOf(pp)] = pw; else delete pn.absent[keyOf(pp)];
+      writeDay(pd, pn);
+    }
     else if (act === "absset" || act === "absdel" || act === "subadd" || act === "subdel") {
-      var rd = addDays(today(), state.peopleOff), rr = dayEdit(rd), nr = { absent: Object.assign({}, rr.absent), subs: rr.subs.slice() };
-      if (act === "absset") { nr.absent[b.getAttribute("data-k")] = state.absWhy || "sjuk"; state.absPop = false; }
+      var rd = addDays(today(), state.peopleOff), rr = dayEdit(rd), nr = { absent: Object.assign({}, rr.absent), subs: rr.subs.slice(), note: rr.note };
+      if (act === "absset") {
+        var aw = state.absWhy || "sjuk";
+        if (aw === "annat") { aw = (state.absOther || "").trim().slice(0, 40); if (!aw) { var ao = document.getElementById("abs-other"); if (ao) ao.focus(); return; } }
+        nr.absent[b.getAttribute("data-k")] = aw; state.absPop = false;
+      }
       else if (act === "absdel") delete nr.absent[b.getAttribute("data-k")];
       else if (act === "subdel") nr.subs.splice(+b.getAttribute("data-i"), 1);
       else {
         var sf = state.reportForm, sn = (sf.name || "").trim();
         if (!sn) { var ni = document.getElementById("sub-name"); if (ni) ni.focus(); return; }
         var sme = personByName(state.profile), sdep = sf.dept != null ? sf.dept : sme ? deptOf(sme) : null;
-        var st = (sf.time || "").trim().slice(0, 30), sp = parseShift(st);
-        nr.subs.push({ name: sn.slice(0, 40), time: sp.kind === "work" && sp.ranges.length ? rangeText(sp) : st, dept: sdep == null ? null : sdep });
+        var nsub = { name: sn.slice(0, 40), time: sf.s != null ? hhmm(sf.s) + "–" + hhmm(sf.e) : "", dept: sdep == null ? null : sdep };
+        nr.subs.push(nsub); rememberSub(nsub);
         state.reportForm = {};
       }
       state.reportErr = null; state.reportCopied = false; writeDay(rd, nr);
+    }
+    else if (act === "subpast") {
+      // A substitute from before: name, hours and department as last time, ready to add or change.
+      var pt = parseShift(b.getAttribute("data-t") || ""), pdv = b.getAttribute("data-d");
+      state.reportForm = { name: b.getAttribute("data-n"), dept: pdv === "" ? null : +pdv };
+      if (pt.kind === "work" && pt.ranges.length) { state.reportForm.s = pt.ranges[0].s; state.reportForm.e = pt.ranges[pt.ranges.length - 1].e; }
+      render();
+    }
+    else if (act === "subtimeopen") { state.subTimePop = true; render(); }
+    else if (act === "subtimeclose") { state.subTimePop = false; render(); }
+    else if (act === "subtimeclear") { state.reportForm.s = state.reportForm.e = null; state.subTimePop = false; render(); }
+    else if (act === "subtimeset") {
+      var ts = wheelValue("wh-sh") * 60 + wheelValue("wh-sm"), te = wheelValue("wh-eh") * 60 + wheelValue("wh-em");
+      if (te <= ts) { var t2 = ts; ts = te; te = t2; }
+      state.reportForm.s = ts; state.reportForm.e = te; state.subTimePop = false; buzz(); render();
     }
     else if (act === "subdept") { state.reportForm.dept = +b.getAttribute("data-i"); render(); }
     else if (act === "ropt" || act === "rscope") {
@@ -2882,8 +3053,14 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
   app.addEventListener("input", function (e) {
     if (e.target.id === "pick-q") { state.pickQ = e.target.value; filterPicker(state.pickQ); return; }
+    if (e.target.id === "report-note") {
+      state.reportNote = e.target.value; state.reportCopied = false;
+      var rt = document.getElementById("report-text");
+      if (rt) rt.value = reportText(personByName(state.profile), addDays(today(), state.peopleOff), state.reportNote);
+      return;
+    }
     if (e.target.id === "sub-name") { state.reportForm.name = e.target.value; return; }
-    if (e.target.id === "sub-time") { state.reportForm.time = e.target.value; return; }
+    if (e.target.id === "abs-other") { state.absOther = e.target.value; return; }
     if (e.target.id === "abs-q") { state.absQ = e.target.value; filterList(state.absQ, "#abs-list", "abs-none"); return; }
     if (e.target.id === "fav-q") { state.favQ = e.target.value; filterList(state.favQ, "#fav-list", "fav-none"); return; }
     if (e.target.id === "plan-q") { state.planQ = e.target.value; filterList(state.planQ, "#plan-list", "plan-none"); return; }
@@ -2891,6 +3068,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
   });
   app.addEventListener("keydown", function (e) {
     if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.target.classList && e.target.classList.contains("wheel")) { e.preventDefault(); e.target.scrollTop += (e.key === "ArrowDown" ? 1 : -1) * WHEEL_ROW; return; }
+    if (e.key === "Escape" && state.subTimePop) { state.subTimePop = false; render(); return; }
+    if (e.key === "Escape" && state.otherPop) { state.otherPop = null; render(); return; }
     if (e.key === "Escape" && state.absPop) { state.absPop = false; render(); return; }
     if (e.key === "Escape" && state.report) { state.report = false; render(); return; }
     if (e.key === "Escape" && (state.planOpen || state.deptPop || state.timePop)) { state.planOpen = null; state.deptPop = null; state.timePop = false; render(); return; }
