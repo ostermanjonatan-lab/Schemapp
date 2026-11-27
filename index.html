@@ -1992,16 +1992,15 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
 
     if (sub === "file") {
       out += '<section class="panel">';
-      if (!DATA.people.length) out += "<p>Ladda upp schemat som Excel-fil för att börja.</p>";
+      if (state.pending) {} else if (!DATA.people.length) out += "<p>Ladda upp schemat som Excel-fil för att börja.</p>";
       else out += '<dl class="kv"><dt>Källa</dt><dd>' + esc(DATA.source || "Okänd") + (DATA.example ? " (exempel)" : "") + "</dd>" +
         "<dt>Uppdaterad</dt><dd>" + esc(fmtStamp(DATA.updated)) + "</dd><dt>Personer</dt><dd>" + DATA.people.length + "</dd><dt>Upprepas</dt><dd>" + (DATA.weeks === 1 ? "Varje vecka" : "Var " + DATA.weeks + ":e vecka") + "</dd></dl>";
-      if (usingLocal && EMBEDDED.people.length) out += '<p class="hint">Det här schemat är bara sparat på den här enheten.</p><div class="btn-row"><button class="btn" data-act="droplocal">Använd det delade schemat</button></div>';
+      if (usingLocal && EMBEDDED.people.length && !state.pending) out += '<p class="hint">Det här schemat är bara sparat på den här enheten.</p><div class="btn-row"><button class="btn" data-act="droplocal">Använd det delade schemat</button></div>';
       if (state.pending) {
         var p = state.pending;
         var info = state.pendingInfo || {}, layout = { grid: "dagarna som kolumner", rows: "dagarna som rader", list: "en rad per pass" }[info.kind];
         out += '<div class="msg ok">Hittade ' + p.people.length + (p.people.length === 1 ? " person och " : " personer och ") + p.weeks + (p.weeks === 1 ? " vecka i " : " veckor i ") + esc(p.source) + (layout ? ", med " + layout : "") + ".</div>" +
           '<div class="preview-names">' + p.people.map(function (x) { return '<span class="chip">' + esc(x.name) + "</span>"; }).join("") + "</div>" +
-          previewHtml(p) +
           (info.notes && info.notes.length ? '<p class="hint">Text som inte är tider visas som den står: ' + info.notes.slice(0, 6).map(esc).join(", ") + (info.notes.length > 6 ? " med flera" : "") + ".</p>" : "") +
           '<h3 class="pend-h">Vilken schemavecka är det nu?</h3><p class="hint">Vecka ' + isoWeek(today()) + " (" + weekRange(mondayOf(today())) + ").</p>" +
           '<div class="seg-ctl" role="group" aria-label="Schemavecka nu">' + (function () {
@@ -2060,22 +2059,6 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         "</ol></section>";
     }
     return out + "</div>";
-  }
-
-  // Week 1 for the first people in an uploaded file, to check it was read right before saving.
-  function previewHtml(data) {
-    var people = data.people.slice(0, 4), days = [];
-    for (var d = 0; d < 7; d++) if (d < 5 || people.some(function (p) { return parseShift(p.shifts[d]).kind !== "off"; })) days.push(d);
-    var head = '<tr><th></th>' + days.map(function (d) { return "<th><b>" + DAYS_SHORT[d] + "</b></th>"; }).join("") + "</tr>";
-    var body = people.map(function (p) {
-      return "<tr><th>" + esc(p.name) + "</th>" + days.map(function (d) {
-        var s = parseShift(p.shifts[d]);
-        if (s.kind === "work") return "<td><span>" + hhmm(s.ranges[0].s) + "</span><span>" + hhmm(s.ranges[s.ranges.length - 1].e) + "</span></td>";
-        if (s.kind === "note") return '<td class="note">' + esc(s.label.length > 6 ? s.label.slice(0, 5) + "." : s.label) + "</td>";
-        return '<td class="off">–</td>';
-      }).join("") + "</tr>";
-    }).join("");
-    return '<div class="group-label">Schemavecka 1, de första i filen</div><div class="fav-scroll"><table class="favs"><thead>' + head + "</thead><tbody>" + body + "</tbody></table></div>";
   }
 
   function fmtStamp(iso) { var d = new Date(iso); if (isNaN(d)) return "–"; return d.getDate() + " " + MONTHS_LONG[d.getMonth()] + " " + d.getFullYear() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
