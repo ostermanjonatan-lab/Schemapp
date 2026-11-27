@@ -371,14 +371,15 @@ a.btn { text-decoration: none; color: var(--ink); }
 .mode-switch .opt.on { background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 2px rgba(23, 13, 28, 0.2); }
 .mode-switch svg { width: 18px; height: 18px; stroke: var(--muted); }
 /* Kollegor: search and sort on one row; slim rows with name and time only, your own row marked. */
-.day-nav { display: flex; align-items: center; gap: 6px; margin-top: calc(var(--space-inner) - var(--space-section)); }
+.day-nav { position: relative; display: flex; align-items: center; gap: 4px; margin-top: calc(var(--space-inner) - var(--space-section)); }
 /* The date slides with a swipe and fades out before it reaches the arrows. */
 .day-nav .dn-mid { flex: 1; min-width: 0; overflow: hidden; }
-.day-nav .dn-mid.moving { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+.day-nav .dn-mid.moving { -webkit-mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent); }
 .day-nav .dn-label { display: block; text-align: center; white-space: nowrap; font-weight: 600; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
 .day-nav .dn-arrow { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; background: var(--accent-soft); cursor: pointer; }
 .day-nav .dn-arrow svg { width: 16px; height: 16px; stroke: var(--ink); }
-.day-nav .icon-btn, .day-nav .dn-pad { width: 40px; height: 40px; background: none; flex: none; }
+/* The date has the whole width between the arrows; the button back to today sits in the heading. */
+.head-tools { display: flex; align-items: center; gap: 6px; }
 .tools { display: flex; gap: 8px; align-items: center; }
 .tools .search { flex: 1; min-width: 0; }
 .mini-seg { display: flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--accent-soft); flex: none; height: 48px; }
@@ -1507,10 +1508,10 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     }).join("");
 
     return '<div class="view">' + exampleNote() +
-      '<div class="sec-head"><h2>Kollegor</h2>' + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div>" +
-      '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + '</button><span class="dn-pad"></span>' +
+      '<div class="sec-head"><h2>Kollegor</h2><div class="head-tools">' + (isToday ? "" : todayBtn("people0", true)) + (depts ? modeSwitch("peoplemode", byDept) : "") + "</div></div>" +
+      '<div class="day-nav"><button class="dn-arrow" data-act="peopleday" data-d="-1" aria-label="Föregående dag">' + ICON.left + "</button>" +
       '<span class="dn-mid"><span class="dn-label" data-pslide>' + (off === 0 ? "Idag · " : off === 1 ? "Imorgon · " : off === -1 ? "Igår · " : "") + (off >= -1 && off <= 1 ? DAYS[dow(t)].toLowerCase() : DAYS[dow(t)]) + " " + shortDate(t) + "</span></span>" +
-      todayBtn("people0", !isToday) + '<button class="dn-arrow" data-act="peopleday" data-d="1" aria-label="Nästa dag">' + ICON.right + "</button></div>" +
+      '<button class="dn-arrow" data-act="peopleday" data-d="1" aria-label="Nästa dag">' + ICON.right + "</button></div>" +
       '<section class="people-sec"><div class="tools"><input id="people-q" class="search" type="search" placeholder="Sök namn" value="' + esc(state.peopleQ) + '" autocomplete="off" aria-label="Sök namn">' +
       '<div class="mini-seg" role="group" aria-label="Sortera på"><button data-act="daysort" data-s="start" aria-pressed="' + (sort === "start") + '" aria-label="Sortera på starttid">Start</button><button data-act="daysort" data-s="end" aria-pressed="' + (sort === "end") + '" aria-label="Sortera på sluttid">Slut</button></div></div>' +
       (closed && !q ? '<p class="hint">' + esc(closed) + ", förskolan är stängd.</p>" : "") +
@@ -2420,7 +2421,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       // The date in Kollegor has little room between the arrows: it fades out over a short distance.
       if (el.classList.contains("dn-label")) {
         el.parentNode.classList.toggle("moving", !!x);
-        if (fade != null && x) fade = Math.min(fade, Math.max(0, 1 - Math.abs(x) / 80));
+        if (fade != null && x) fade = Math.min(fade, Math.max(0, 1 - Math.abs(x) / 130));
       }
       el.style.opacity = fade == null ? "" : String(fade);
     });
