@@ -411,6 +411,13 @@ a.btn { text-decoration: none; color: var(--ink); }
 .plan-btn:disabled { opacity: 0.5; cursor: default; }
 .pop-bg { z-index: 30; }
 .plan-pop { position: fixed; z-index: 31; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100% - 32px)); background: var(--surface); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(23, 13, 28, 0.3); }
+/* A setting with a few choices: name on the left, the choices on the right. */
+.set-inline { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; padding: 8px 2px; border-top: 1px solid var(--line); }
+.set-inline .si-l { display: flex; flex-direction: column; min-width: 0; }
+.set-inline .si-t { font-weight: 500; font-size: var(--fs-md); }
+.set-inline .si-s { font-size: var(--fs-xs); color: var(--muted); }
+.set-inline .mini-seg { height: 40px; }
+.set-inline .mini-seg button { min-width: 36px; padding: 0 9px; font-variant-numeric: tabular-nums; }
 .set-item { display: flex; flex-direction: column; gap: 8px; padding: 12px 2px 4px; border-top: 1px solid var(--line); }
 .set-item .si-t { font-weight: 500; font-size: var(--fs-md); }
 .set-item .hint { margin: -4px 0 0; }
@@ -1570,11 +1577,11 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       setRow("sub", "file", "Schemafil", isNaN(up) ? "" : "Uppdaterad " + shortDate(up)) +
       setRow("sub", "plan", "Planeringstid", chosen ? chosen + " valda" : "Automatisk") +
       (dl ? setRow("sub", "depts", "Avdelningar", dl.length + " st") : "") + "</ul>" +
-      '<div class="set-item"><span class="si-t">Schemavecka nu</span><p class="hint">Vecka ' + isoWeek(t) + " (" + weekRange(mondayOf(t)) + ").</p>" +
-      '<div class="seg-ctl" role="group" aria-label="Schemavecka nu">';
+      '<div class="set-inline"><div class="si-l"><span class="si-t">Schemavecka</span><span class="si-s">Vecka ' + isoWeek(t) + " just nu</span></div>" +
+      '<div class="mini-seg" role="group" aria-label="Schemavecka nu">';
     for (var w = 0; w < DATA.weeks; w++) out += '<button data-act="setweek" data-w="' + w + '" aria-pressed="' + (w === curW) + '">' + (w + 1) + "</button>";
-    out += '</div></div><div class="set-item"><span class="si-t">Rast</span><p class="hint">Dras av från pass över 5 timmar. Pass över 10 timmar får 30 minuter extra.</p><div class="seg-ctl" role="group" aria-label="Rast i minuter">';
-    [0, 30, 45, 60].forEach(function (m) { out += '<button data-act="setbreak" data-m="' + m + '" aria-pressed="' + (m === breakMin()) + '">' + (m ? m + "\u00a0min" : "Ingen") + "</button>"; });
+    out += '</div></div><div class="set-inline"><div class="si-l"><span class="si-t">Rast</span><span class="si-s">Minuter per pass</span></div><div class="mini-seg" role="group" aria-label="Rast i minuter">';
+    [0, 30, 45, 60].forEach(function (m) { out += '<button data-act="setbreak" data-m="' + m + '" aria-pressed="' + (m === breakMin()) + '"' + (m ? ' aria-label="' + m + ' minuter"' : "") + ">" + (m ? m : "Ingen") + "</button>"; });
     out += "</div></div></section>";
 
     return out + "</div>";
