@@ -1251,7 +1251,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       var newSubs = pr.subs.filter(function (x) { return have.indexOf(norm(x.name)) < 0; }).length;
       if (!newAbs && !newSubs) return "";
       var when = pv === state.peopleOff - 1 ? (state.peopleOff === 0 ? "igår" : "dagen innan") : DAYS[dow(addDays(today(), pv))].toLowerCase();
-      return '<section class="rp-sec rp-same"><button class="btn" data-act="sameprev" data-o="' + pv + '">Hämta från ' + when + "</button>" +
+      return '<section class="rp-sec rp-same"><button class="btn primary" data-act="sameprev" data-o="' + pv + '">Hämta från ' + when + "</button>" +
         '<span class="hint">' + [newAbs ? newAbs + " frånvarande" : "", newSubs ? newSubs + (newSubs === 1 ? " vikarie" : " vikarier") : ""].filter(Boolean).join(" och ") + "</span></section>";
     })();
     var past = pastSubs(rec.subs.map(function (x) { return norm(x.name); }));
@@ -1268,7 +1268,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       fold("head", "Rubrik", state.reportTitle != null ? state.reportTitle : rec.title || reportTitle(d),
         '<input id="report-head" class="other-in" type="text" maxlength="80" value="' + esc(state.reportTitle != null ? state.reportTitle : rec.title || reportTitle(d)) + '" autocomplete="off" aria-label="Rubrik">', true) +
       fold("abs", "Frånvaro", nAbs ? nAbs + (nAbs === 1 ? " person" : " personer") : "Ingen",
-        same + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn" data-act="absadd">Lägg till frånvaro</button>') +
+        same + (abs ? '<ul class="rp-list">' + abs + "</ul>" : "") + '<button class="btn primary" data-act="absadd">Lägg till frånvaro</button>') +
       fold("subs", "Vikarier idag", rec.subs.length ? rec.subs.length + (rec.subs.length === 1 ? " vikarie" : " vikarier") : "Inga",
         (subs ? '<ul class="rp-list">' + subs + "</ul>" : "") +
         (past.length ? '<div class="rp-past"><span class="hint">Tidigare vikarier</span><ul class="check-list rp-pastlist">' + past.slice(0, 6).map(function (x) {
@@ -1279,7 +1279,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         // Department as a fold-down: the chosen one on the button, the others listed when it is opened.
         (dl ? '<div class="rp-dd"><button class="time-btn rp-dd-btn" data-act="subdeptopen" aria-expanded="' + !!state.subDeptOpen + '"><span class="tp-t">Avdelning</span><span class="tp-v">' + (fd != null && dl[fd] ? esc(dl[fd].name) : "Välj") + "</span>" + ICON.down + "</button>" +
           (state.subDeptOpen ? '<ul class="check-list rp-dd-list">' + dl.map(function (x, i) { return '<li><button data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>"; }).join("") + "</ul>" : "") + "</div>" : "") +
-        '<button class="btn" data-act="subadd">Lägg till vikarie</button>') +
+        '<button class="btn primary" data-act="subadd">Lägg till vikarie</button>') +
       fold("note", "Övrigt", (state.reportNote != null ? state.reportNote : rec.note).trim().split("\n")[0] || "Inget",
         '<textarea id="report-note" class="rp-note" rows="3" maxlength="1000" placeholder="Till exempel utflykt, besök eller annat som kollegorna behöver veta">' + esc(state.reportNote != null ? state.reportNote : rec.note) + '</textarea><span class="hint">Kommer sist i texten.</span>') +
       fold("custom", "Anpassa texten", "",
