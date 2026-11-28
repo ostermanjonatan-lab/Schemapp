@@ -447,8 +447,12 @@ html.lock { overflow: hidden; }
 .sub-time .tp-v { white-space: nowrap; }
 .rp-past { display: flex; flex-direction: column; gap: 2px; }
 .rp-pastlist { margin-top: -2px; }
-.mini-seg.rp-deptseg { height: auto; display: grid; grid-template-columns: repeat(2, 1fr); }
-.rp-deptseg button { height: 38px; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-dd { display: flex; flex-direction: column; }
+.rp-dd-btn { min-height: 44px; }
+.rp-dd-btn svg { transition: transform 0.15s; }
+.rp-dd-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.rp-dd-btn[aria-expanded="true"] { border-radius: 12px 12px 0 0; }
+.rp-dd-list { border: 1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; padding: 0 10px; background: var(--surface); }
 .mini-seg.p-away { margin: 4px 0 2px; height: auto; display: grid; grid-template-columns: repeat(3, 1fr); }
 .p-away button { height: 38px; padding: 0 8px; white-space: nowrap; }
 .p-big.away { color: var(--warn); }
@@ -744,6 +748,7 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
     rpOpen: {},
     reportText: null,
     subTimePop: false,
+    subDeptOpen: false,
     otherPop: null,
     favQ: "",
     planQ: "",
@@ -1271,7 +1276,9 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
         }).join("") + "</ul></div>" : "") +
         '<div class="rp-form"><input id="sub-name" type="text" placeholder="Namn" autocomplete="off" value="' + esc(f.name || "") + '" aria-label="Vikariens namn">' +
         '<button class="time-btn sub-time" data-act="subtimeopen" aria-haspopup="dialog"><span class="tp-v">' + (f.s != null ? hhmm(f.s) + "–" + hhmm(f.e) : "Välj tid") + "</span>" + ICON.down + "</button></div>" +
-        (dl ? '<div class="mini-seg rp-deptseg" role="group" aria-label="Avdelning">' + dl.map(function (x, i) { return '<button data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "") +
+        // Department as a fold-down: the chosen one on the button, the others listed when it is opened.
+        (dl ? '<div class="rp-dd"><button class="time-btn rp-dd-btn" data-act="subdeptopen" aria-expanded="' + !!state.subDeptOpen + '"><span class="tp-t">Avdelning</span><span class="tp-v">' + (fd != null && dl[fd] ? esc(dl[fd].name) : "Välj") + "</span>" + ICON.down + "</button>" +
+          (state.subDeptOpen ? '<ul class="check-list rp-dd-list">' + dl.map(function (x, i) { return '<li><button data-act="subdept" data-i="' + i + '" aria-pressed="' + (fd === i) + '"><span>' + esc(x.name) + "</span>" + ICON.check + "</button></li>"; }).join("") + "</ul>" : "") + "</div>" : "") +
         '<button class="btn" data-act="subadd">Lägg till vikarie</button>') +
       fold("note", "Övrigt", (state.reportNote != null ? state.reportNote : rec.note).trim().split("\n")[0] || "Inget",
         '<textarea id="report-note" class="rp-note" rows="3" maxlength="1000" placeholder="Till exempel utflykt, besök eller annat som kollegorna behöver veta">' + esc(state.reportNote != null ? state.reportNote : rec.note) + '</textarea><span class="hint">Kommer sist i texten.</span>') +
@@ -3226,7 +3233,8 @@ button:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
       if (te <= ts) { var t2 = ts; ts = te; te = t2; }
       state.reportForm.s = ts; state.reportForm.e = te; state.subTimePop = false; buzz(); render();
     }
-    else if (act === "subdept") { state.reportForm.dept = +b.getAttribute("data-i"); render(); }
+    else if (act === "subdeptopen") { state.subDeptOpen = !state.subDeptOpen; render(); }
+    else if (act === "subdept") { state.reportForm.dept = +b.getAttribute("data-i"); state.subDeptOpen = false; render(); }
     else if (act === "rfold") { var fk = b.getAttribute("data-k"); state.rpOpen[fk] = !state.rpOpen[fk]; render(); }
     else if (act === "rtextedit" || act === "rtextreset") {
       var ed = addDays(today(), state.peopleOff);
